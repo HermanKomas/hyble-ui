@@ -146,6 +146,7 @@ export async function generateRoutes(app: FastifyInstance) {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Generation failed';
+      request.log.error({ err, message }, 'Generation failed');
       sendSSE(reply, { event: 'error', message });
     }
 
