@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Hyble AI Menu MVP — Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css"/>
+<link rel="stylesheet" href="app.css"/>
+<style>
+  body { background: #f0eee9; }
+  /* Frame chrome */
+  .frame {
+    width: 100%; height: 100%; background: var(--paper);
+    border-radius: 10px; overflow: hidden; position: relative;
+    box-shadow: var(--shadow-2);
+  }
+  .frame[data-theme="dark"] { background: var(--paper); }
+  .frame-shell { display: flex; height: 100%; }
+  .frame-main  { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="shell.jsx"></script>
+<script type="text/babel" src="create-prompt.jsx"></script>
+<script type="text/babel" src="menu-preview.jsx"></script>
+<script type="text/babel" src="create-active.jsx"></script>
+<script type="text/babel" src="create-screen.jsx"></script>
+<script type="text/babel" src="orders.jsx"></script>
+<script type="text/babel" src="auth.jsx"></script>
+<script type="text/babel" src="design-plan.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState: useStateMain, useEffect: useEffectMain } = React;
+
+// Frame helper — wraps a screen in app chrome (rail + header).
+function AppFrame({ theme = "light", screen = "create", showRail = true, headerTitle, headerSub, headerRight, mobile = false, children }) {
+  return (
+    <div className="frame" data-theme={theme} style={{ display:"flex", flexDirection: mobile ? "column" : "row" }}>
+      {showRail && !mobile && <Rail active={screen}/>}
+      <div className="frame-main">
+        {headerTitle && (
+          <HeaderBar
+            title={headerTitle}
+            subtitle={headerSub}
+            right={headerRight ?? (
+              <>
+                <button className="btn btn-sm btn-ghost btn-icon" title="Theme">{theme === "dark" ? <Ico.Moon/> : <Ico.Sun/>}</button>
+                {!mobile && <button className="btn btn-sm btn-accent"><Ico.Plus/> New menu</button>}
+              </>
+            )}
+          />
+        )}
+        {showRail && mobile && <Rail active={screen} compact/>}
+        <div style={{ flex:1, display:"flex", flexDirection:"column", minHeight: 0 }}>{children}</div>
+      </div>
+    </div>
+  );
+}
+
+// ── Interactive artboards ─────────────────────────────────────
+function ABCreateInitial({ theme }) {
+  return (
+    <AppFrame theme={theme} screen="create" headerTitle="Create" headerSub="Start a new menu">
+      <CreateScreen initialMode="initial"/>
+    </AppFrame>
+  );
+}
+function ABCreateActive({ theme }) {
+  return (
+    <AppFrame theme={theme} screen="create" headerTitle="Oakridge Tavern · wine menu" headerSub="DRAFT · O-1043">
+      <CreateScreen initialMode="active"/>
+    </AppFrame>
+  );
+}
+function ABCreateGenerating({ theme }) {
+  return (
+    <AppFrame theme={theme} screen="create" headerTitle="Oakridge Tavern · wine menu" headerSub="GENERATING">
+      <CreateScreen initialMode="initial"/>
+    </AppFrame>
+  );
+}
+
+// ── Static artboards ─────────────────────────────────────────
+function ABAuth({ theme }) {
+  return <div className="frame" data-theme={theme}><AuthScreen/></div>;
+}
+
+function ABOrdersList({ theme }) {
+  const [screen, setScreen] = useStateMain({ kind:"list" });
+  return (
+    <AppFrame theme={theme} screen="orders" headerTitle="Orders" headerSub="All time · 248 orders">
+      {screen.kind === "list"
+        ? <OrdersList onOpen={(o) => setScreen({ kind:"detail", order: o })}/>
+        : <OrderDetail order={screen.order} onBack={() => setScreen({ kind:"list" })}/>}
+    </AppFrame>
+  );
+}
+function ABOrdersDetail({ theme }) {
+  return (
+    <AppFrame theme={theme} screen="orders" headerTitle="Order detail" headerSub="O-1042">
+      <OrderDetail/>
+    </AppFrame>
+  );
+}
+function ABOrdersEmpty({ theme }) {
+  return (
+    <AppFrame theme={theme} screen="orders" headerTitle="Orders" headerSub="empty state">
+      <OrdersList empty/>
+    </AppFrame>
+  );
+}
+
+function ABErrors({ theme }) {
+  return (
+    <div className="frame" data-theme={theme} style={{ padding: 32, overflow:"auto" }}>
+      <div style={{ display:"flex", flexDirection:"column", gap: 18, maxWidth: 480, margin:"0 auto" }}>
+        <div className="eyebrow">Error states · rendered inline in chat</div>
+        <ErrorBlock kind="api"/>
+        <ErrorBlock kind="compliance"/>
+        <ErrorBlock kind="rate"/>
+      </div>
+    </div>
+  );
+}
+
+function ABMobileInitial({ theme }) {
+  return (
+    <div className="frame" data-theme={theme} style={{ display:"flex", flexDirection:"column" }}>
+      <div style={{ height: 30, background:"var(--paper)", borderBottom:"1px solid var(--rule)", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 18px", fontFamily:"var(--font-mono)", fontSize: 11, color:"var(--ink-2)" }}>
+        <span>9:41</span><span>● ● ●</span>
+      </div>
+      <Rail active="create" compact/>
+      <CreateScreen initialMode="initial" mobile/>
+    </div>
+  );
+}
+function ABMobileActive({ theme }) {
+  const [view, setView] = useStateMain("design");
+  return (
+    <div className="frame" data-theme={theme} style={{ display:"flex", flexDirection:"column" }}>
+      <div style={{ height: 30, background:"var(--paper)", borderBottom:"1px solid var(--rule)", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 18px", fontFamily:"var(--font-mono)", fontSize: 11, color:"var(--ink-2)" }}>
+        <span>9:41</span><span>● ● ●</span>
+      </div>
+      <Rail active="create" compact/>
+      <CreateScreen initialMode="active" mobile mobileView={view} onMobileViewChange={setView}/>
+    </div>
+  );
+}
+function ABMobileChat({ theme }) {
+  return (
+    <div className="frame" data-theme={theme} style={{ display:"flex", flexDirection:"column" }}>
+      <div style={{ height: 30, background:"var(--paper)", borderBottom:"1px solid var(--rule)", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 18px", fontFamily:"var(--font-mono)", fontSize: 11, color:"var(--ink-2)" }}>
+        <span>9:41</span><span>● ● ●</span>
+      </div>
+      <Rail active="create" compact/>
+      <CreateScreen initialMode="active" mobile mobileView="chat"/>
+    </div>
+  );
+}
+
+function ABTabletActive({ theme }) {
+  return (
+    <AppFrame theme={theme} screen="create" headerTitle="Oakridge Tavern · wine menu" headerSub="DRAFT · O-1043 · tablet">
+      <CreateScreen initialMode="active"/>
+    </AppFrame>
+  );
+}
+
+// ── Tweaks (live) ────────────────────────────────────────────
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "dark",
+  "promptVariant": "editorial",
+  "density": "compact",
+  "mobileToggle": "segmented",
+  "showAllStates": true
+}/*EDITMODE-END*/;
+
+function App() {
+  const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const t = tweaks.theme;
+
+  // Apply theme to document element so design-canvas grid color fits
+  useEffectMain(() => { document.documentElement.setAttribute("data-theme", t); }, [t]);
+
+  return (
+    <>
+      <DesignCanvas>
+        <DCSection id="plan" title="Design plan" subtitle="Handoff doc — read first">
+          <DCArtboard id="plan-doc" label="Design plan · v0.1" width={840} height={1700}>
+            <DesignPlanDoc/>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="create" title="Create flow" subtitle="The critical UX moment — interactive">
+          <DCArtboard id="create-initial" label="Initial · empty · DESKTOP · interactive" width={1280} height={820}>
+            <ABCreateInitial theme={t}/>
+          </DCArtboard>
+          <DCArtboard id="create-active" label="Active · post-first-generation · interactive" width={1280} height={820}>
+            <ABCreateActive theme={t}/>
+          </DCArtboard>
+          <DCArtboard id="create-generating" label="Generating · SSE-driven skeleton" width={1280} height={820}>
+            <ABCreateGenerating theme={t}/>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="responsive" title="Responsive" subtitle="Tablet & mobile · interactive">
+          <DCArtboard id="tablet" label="Tablet · 1024w" width={1024} height={780}>
+            <ABTabletActive theme={t}/>
+          </DCArtboard>
+          <DCArtboard id="mobile-initial" label="Mobile · initial · 390w" width={390} height={780}>
+            <ABMobileInitial theme={t}/>
+          </DCArtboard>
+          <DCArtboard id="mobile-design" label="Mobile · active · Design view" width={390} height={780}>
+            <ABMobileActive theme={t}/>
+          </DCArtboard>
+          <DCArtboard id="mobile-chat" label="Mobile · active · Chat view" width={390} height={780}>
+            <ABMobileChat theme={t}/>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="orders" title="Orders" subtitle="List, detail, empty">
+          <DCArtboard id="orders-list" label="Orders list · click a row" width={1280} height={780}>
+            <ABOrdersList theme={t}/>
+          </DCArtboard>
+          <DCArtboard id="orders-detail" label="Order detail" width={1280} height={780}>
+            <ABOrdersDetail theme={t}/>
+          </DCArtboard>
+          <DCArtboard id="orders-empty" label="Orders · empty" width={1024} height={680}>
+            <ABOrdersEmpty theme={t}/>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="states" title="States" subtitle="Auth, errors">
+          <DCArtboard id="auth" label="Sign in" width={1100} height={680}>
+            <ABAuth theme={t}/>
+          </DCArtboard>
+          <DCArtboard id="errors" label="Error · compliance · rate-limit" width={620} height={680}>
+            <ABErrors theme={t}/>
+          </DCArtboard>
+        </DCSection>
+      </DesignCanvas>
+
+      <TweaksPanel>
+        <TweakSection label="Theme">
+          <TweakRadio
+            value={tweaks.theme}
+            onChange={v => setTweak("theme", v)}
+            options={[{ value:"light", label:"Light" }, { value:"dark", label:"Dark" }]}
+          />
+        </TweakSection>
+        <TweakSection label="Density">
+          <TweakRadio
+            value={tweaks.density}
+            onChange={v => setTweak("density", v)}
+            options={[{ value:"compact", label:"Compact" }, { value:"roomy", label:"Roomy" }]}
+          />
+        </TweakSection>
+        <TweakSection label="Notes">
+          <div style={{ fontSize: 12, lineHeight: 1.5, color:"#777" }}>
+            The Create artboards are fully interactive. Click slots, fill the sentence, hit Generate to see the initial→active morph and SSE-driven skeleton fill. Mobile artboards run the same code at 390w with the segmented toggle.
+          </div>
+        </TweakSection>
+      </TweaksPanel>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

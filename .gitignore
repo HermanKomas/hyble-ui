@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+*.env.local
+.DS_Store
+*.log
+.turbo/
+apps/web/dist/
+apps/api/dist/
+# Compiled JS artifacts that shadow .tsx sources and break Vite hot-reload
+apps/web/src/**/*.js

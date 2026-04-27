@@ -1,0 +1,64 @@
+/* Hyble AI Menu MVP — design tokens.
+   Editorial typographic. Warm paper / wine-black. Single oxblood accent.
+   Variables expressed as Tailwind-compatible HSL/oklch tokens; engineering
+   maps these into shadcn theme via @theme inline. */
+
+:root {
+  /* Type */
+  --font-display: "Instrument Serif", "Cormorant Garamond", "Times New Roman", serif;
+  --font-ui: "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Light theme (paper) */
+  --paper:        oklch(98.6% 0.005 80);
+  --paper-2:      oklch(96.8% 0.006 80);
+  --paper-3:      oklch(94.0% 0.007 80);
+  --rule:         oklch(88.0% 0.009 80);
+  --rule-soft:    oklch(92.0% 0.008 80);
+  --ink:          oklch(20.5% 0.012 60);
+  --ink-2:        oklch(38.0% 0.012 60);
+  --ink-3:        oklch(54.0% 0.011 60);
+  --ink-4:        oklch(68.0% 0.010 80);
+  --accent:       oklch(46.0% 0.135 25);   /* oxblood */
+  --accent-ink:   oklch(98% 0.005 80);     /* on-accent */
+  --accent-soft:  oklch(94% 0.018 25);
+  --warn:         oklch(60% 0.16 50);
+  --ok:           oklch(56% 0.10 150);
+
+  /* Spacing scale (Tailwind compatible — 4px base) */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
+  --space-12: 48px; --space-16: 64px; --space-20: 80px; --space-24: 96px;
+
+  /* Radius — restrained. Editorial doesn't roll soft. */
+  --r-1: 3px; --r-2: 6px; --r-3: 10px; --r-4: 14px; --r-pill: 999px;
+
+  /* Shadow — paper-on-paper, never glassy */
+  --shadow-1: 0 1px 0 rgba(20,15,10,.04), 0 1px 2px rgba(20,15,10,.04);
+  --shadow-2: 0 1px 0 rgba(20,15,10,.04), 0 8px 24px -10px rgba(20,15,10,.10);
+  --shadow-3: 0 2px 0 rgba(20,15,10,.05), 0 22px 60px -20px rgba(20,15,10,.18);
+
+  /* Motion */
+  --ease-out: cubic-bezier(.22, .8, .28, 1);
+  --ease-in:  cubic-bezier(.5, 0, .8, .4);
+  --ease-spring: cubic-bezier(.2, 1.2, .3, 1);
+  --d-fast: 140ms; --d-base: 220ms; --d-slow: 420ms; --d-xslow: 720ms;
+}
+
+[data-theme="dark"] {
+  --paper:        oklch(15.5% 0.008 60);
+  --paper-2:      oklch(18.2% 0.009 60);
+  --paper-3:      oklch(22.0% 0.010 60);
+  --rule:         oklch(28.0% 0.012 60);
+  --rule-soft:    oklch(24.0% 0.010 60);
+  --ink:          oklch(94.0% 0.008 80);
+  --ink-2:        oklch(78.0% 0.010 80);
+  --ink-3:        oklch(60.0% 0.010 80);
+  --ink-4:        oklch(44.0% 0.010 80);
+  --accent:       oklch(62.0% 0.140 30);   /* warmer rust in dark */
+  --accent-ink:   oklch(15% 0.008 60);
+  --accent-soft:  oklch(28% 0.040 30);
+  --shadow-1: 0 1px 0 rgba(0,0,0,.4), 0 1px 2px rgba(0,0,0,.3);
+  --shadow-2: 0 1px 0 rgba(0,0,0,.4), 0 10px 28px -12px rgba(0,0,0,.55);
+  --shadow-3: 0 2px 0 rgba(0,0,0,.5), 0 26px 70px -22px rgba(0,0,0,.7);
+}

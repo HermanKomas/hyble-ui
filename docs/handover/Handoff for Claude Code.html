@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Hyble AI Menu MVP — Handoff for Claude Code</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  /* === Tokens (kept inline so this doc is self-contained for handoff) === */
+  :root {
+    --font-display: "Instrument Serif", "Cormorant Garamond", Georgia, serif;
+    --font-ui: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+    --paper:     oklch(98.6% 0.005 80);
+    --paper-2:   oklch(96.8% 0.006 80);
+    --paper-3:   oklch(94.0% 0.007 80);
+    --rule:      oklch(88.0% 0.009 80);
+    --rule-soft: oklch(92.0% 0.008 80);
+    --ink:       oklch(20.5% 0.012 60);
+    --ink-2:     oklch(38.0% 0.012 60);
+    --ink-3:     oklch(54.0% 0.011 60);
+    --ink-4:     oklch(68.0% 0.010 80);
+    --accent:    oklch(46.0% 0.135 25);
+    --accent-ink: oklch(98% 0.005 80);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-ui);
+    color: var(--ink);
+    background: var(--paper);
+    font-size: 14px;
+    line-height: 1.65;
+    font-feature-settings: "ss01","ss02";
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .doc { max-width: 860px; margin: 0 auto; padding: 72px 64px 96px; }
+  .eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+  .display { font-family: var(--font-display); letter-spacing: -0.014em; line-height: 1.08; font-weight: 400; }
+  .mono { font-family: var(--font-mono); }
+
+  /* Cover */
+  header.cover { padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  header.cover h1 { font: 400 56px/1.05 var(--font-display); letter-spacing: -0.018em; margin: 8px 0 4px; }
+  header.cover .sub { font-family: var(--font-display); font-style: italic; font-size: 22px; color: var(--ink-2); margin: 0 0 16px; }
+  header.cover .meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 22px; }
+  header.cover .meta div { padding-top: 10px; border-top: 1px solid var(--rule-soft); }
+  header.cover .meta .k { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  header.cover .meta .v { font-size: 13px; color: var(--ink); margin-top: 2px; }
+
+  /* TOC */
+  .toc { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 22px; margin: 24px 0 8px; padding: 18px 0 6px; border-top: 1px solid var(--rule-soft); border-bottom: 1px solid var(--rule-soft); }
+  .toc a { color: var(--ink); text-decoration: none; padding: 6px 0; font-size: 13.5px; display: flex; align-items: baseline; gap: 12px; border-bottom: 1px dashed transparent; }
+  .toc a:hover { border-bottom-color: var(--rule); }
+  .toc .num { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-3); width: 26px; flex: 0 0 26px; }
+  .toc .leader { flex: 1; border-bottom: 1px dotted var(--rule); transform: translateY(-4px); }
+  .toc .pg { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-3); }
+
+  /* Sections */
+  section.s { margin-top: 56px; scroll-margin-top: 24px; }
+  section.s > .head { display: flex; align-items: baseline; gap: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--rule); margin-bottom: 18px; }
+  section.s > .head .n { font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); letter-spacing: .1em; }
+  section.s > .head h2 { font: 400 32px/1.1 var(--font-display); letter-spacing: -0.012em; margin: 0; }
+
+  h3 { font: 400 22px/1.2 var(--font-display); letter-spacing: -0.005em; margin: 26px 0 8px; }
+  h4 { font-family: var(--font-ui); font-size: 13px; font-weight: 600; margin: 18px 0 6px; letter-spacing: .005em; }
+  p { margin: 8px 0; }
+  ul, ol { margin: 8px 0 12px; padding-left: 20px; }
+  ul li, ol li { margin: 4px 0; }
+
+  code, pre { font-family: var(--font-mono); }
+  code { font-size: 12px; background: var(--paper-2); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--rule-soft); }
+  pre { font-size: 11.5px; line-height: 1.55; background: var(--paper-2); border: 1px solid var(--rule-soft); border-radius: 6px; padding: 14px 16px; overflow: auto; }
+  pre code { background: transparent; border: none; padding: 0; font-size: inherit; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 6px; }
+  table th, table td { text-align: left; padding: 8px 10px; vertical-align: top; font-size: 13px; line-height: 1.5; border-bottom: 1px dashed var(--rule-soft); }
+  table th { font-family: var(--font-mono); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-3); font-weight: 500; border-bottom: 1px solid var(--rule); padding-bottom: 8px; }
+  table td.k { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-2); white-space: nowrap; }
+  table td.path { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-2); }
+
+  /* Two-up theme block */
+  .themes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 14px 0; }
+  .theme-card { padding: 16px; border-radius: 10px; border: 1px solid var(--rule); }
+  .theme-card.light { background: oklch(98.6% 0.005 80); color: oklch(20.5% 0.012 60); }
+  .theme-card.dark  { background: oklch(15.5% 0.008 60); color: oklch(94.0% 0.008 80); border-color: oklch(28% 0.012 60); }
+  .theme-card .label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; opacity: .7; margin-bottom: 10px; display: flex; justify-content: space-between; }
+  .theme-card .swatches { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 10px 0 14px; }
+  .theme-card .swatch { aspect-ratio: 1 / 1; border-radius: 4px; border: 1px solid currentColor; opacity: .9; }
+  .theme-card .sw-label { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; font-family: var(--font-mono); font-size: 9.5px; opacity: .55; text-align: center; }
+  .theme-card dl { display: grid; grid-template-columns: 110px 1fr; gap: 4px 10px; font-family: var(--font-mono); font-size: 11px; margin: 0; }
+  .theme-card dt { opacity: .6; }
+  .theme-card dd { margin: 0; }
+  .theme-card hr { border: none; border-top: 1px dashed currentColor; opacity: .25; margin: 12px 0; }
+  .theme-card .demo {
+    padding: 12px; border-radius: 8px; border: 1px solid currentColor;
+    margin-top: 10px; font-family: var(--font-display); font-size: 26px; line-height: 1.15;
+    letter-spacing: -0.012em;
+  }
+  .theme-card .demo em { font-style: italic; }
+  .theme-card .demo .slot { display: inline-block; padding: 2px 10px; border-radius: 3px; font-family: var(--font-ui); font-size: 14px; vertical-align: 3px; margin: 0 2px; border: 1px dashed currentColor; opacity: .8; }
+  .theme-card .demo .accent {
+    display: inline-block; padding: 2px 10px; font-family: var(--font-ui); font-size: 13px; vertical-align: 3px; border-radius: 3px; margin-left: 6px;
+  }
+  .theme-card.light .demo .accent { background: oklch(46% 0.135 25); color: oklch(98% 0.005 80); border: none; }
+  .theme-card.dark  .demo .accent { background: oklch(62% 0.140 30); color: oklch(15.5% 0.008 60); border: none; }
+
+  /* Token grid */
+  .tokens { display: grid; grid-template-columns: 200px 1fr 1fr; gap: 0; border-top: 1px solid var(--rule); margin: 12px 0; }
+  .tokens > div { padding: 7px 12px 7px 0; border-bottom: 1px dashed var(--rule-soft); font-size: 12.5px; }
+  .tokens .h { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; color: var(--ink-3); text-transform: uppercase; padding-top: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
+  .tokens .name { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-2); }
+  .tokens .val  { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink); }
+
+  /* Sequence list */
+  .seq { display: grid; grid-template-columns: 90px 1fr; gap: 4px 14px; border-top: 1px solid var(--rule-soft); }
+  .seq > div { padding: 8px 0; border-bottom: 1px dashed var(--rule-soft); }
+  .seq .t { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+  .seq .e { font-size: 13px; line-height: 1.55; }
+
+  /* Callout */
+  .callout { padding: 12px 16px; border-left: 2px solid var(--accent); background: var(--paper-2); margin: 14px 0; font-size: 13px; border-radius: 0 6px 6px 0; }
+  .callout .lab { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 4px; }
+
+  /* Ascii layout boxes */
+  pre.layout { font-family: var(--font-mono); font-size: 10.5px; line-height: 1.45; }
+
+  /* Footer */
+  footer.doc-foot { margin-top: 64px; padding-top: 18px; border-top: 1px solid var(--rule); color: var(--ink-3); font-size: 12px; font-family: var(--font-mono); letter-spacing: .04em; display: flex; justify-content: space-between; }
+
+  /* Print */
+  @media print {
+    body { background: white; }
+    .doc { padding: 0; max-width: none; }
+    section.s { break-inside: avoid; page-break-inside: avoid; }
+    pre, table, .themes, .tokens { break-inside: avoid; }
+    header.cover { page-break-after: avoid; }
+    a { color: inherit; text-decoration: none; }
+    .toc a { border-bottom: none; }
+  }
+
+  @media (max-width: 720px) {
+    .doc { padding: 36px 22px 64px; }
+    header.cover h1 { font-size: 40px; }
+    header.cover .meta { grid-template-columns: 1fr 1fr; }
+    .themes, .toc { grid-template-columns: 1fr; }
+    .tokens { grid-template-columns: 140px 1fr; }
+    .tokens .val { grid-column: 2; }
+  }
+</style>
+</head>
+<body>
+<div class="doc">
+
+<!-- ============ COVER ============ -->
+<header class="cover">
+  <div class="eyebrow">Engineering handoff · for Claude Code</div>
+  <h1 class="display">Hyble AI Menu MVP</h1>
+  <p class="sub">Design-to-build spec — read alongside <code>PLAN.md</code></p>
+  <div class="meta">
+    <div><div class="k">Owner (design)</div><div class="v">Hyble Design — v0.1</div></div>
+    <div><div class="k">Owner (build)</div><div class="v">Herman, VP Engineering</div></div>
+    <div><div class="k">Stack</div><div class="v">Vite · React 18 · Tailwind · shadcn/ui</div></div>
+    <div><div class="k">Status</div><div class="v">Pre-Phase-1 · ready for kickoff</div></div>
+  </div>
+</header>
+
+<!-- ============ TOC ============ -->
+<nav class="toc" aria-label="Contents">
+  <a href="#s00"><span class="num">00</span><span>How to read this doc</span><span class="leader"></span><span class="pg">↘</span></a>
+  <a href="#s01"><span class="num">01</span><span>Visual direction</span><span class="leader"></span><span class="pg">↘</span></a>
+  <a href="#s02"><span class="num">02</span><span>Themes — light & dark</span><span class="leader"></span><span class="pg">↘</span></a>
+  <a href="#s03"><span class="num">03</span><span>Design tokens</span><span class="leader"></span><span class="pg">↘</span></a>
+  <a href="#s04"><span class="num">04</span><span>Tailwind & shadcn theme wiring</span><span class="leader"></span><span class="pg">↘</span></a>
+  <a href="#s05"><span class="num">05</span><span>Component inventory</span><span class="leader"></span><span class="pg">↘</span></a>
+  <a href="#s06"><span class="num">06</span><span>Screen specs</span><span class="leader"></span><span class="pg">↘</span></a>
+  <a href="#s07"><span class="num">07</span><span>Create flow — initial → active</span><span class="leader"></span><span class="pg">↘</span></a>
+  <a href="#s08"><span class="num">08</span><span>SSE generating state</span><span class="leader"></span><span class="pg">↘</span></a>
+  <a href="#s09"><span class="num">09</span><span>States — error, empty, offline</span><span class="leader"></span><span class="pg">↘</span></a>
+  <a href="#s10"><span class="num">10</span><span>Mobile responsive</span><span class="leader"></span><span class="pg">↘</span></a>
+  <a href="#s11"><span class="num">11</span><span>Interaction specs</span><span class="leader"></span><span class="pg">↘</span></a>
+  <a href="#s12"><span class="num">12</span><span>Animation & motion</span><span class="leader"></span><span class="pg">↘</span></a>
+  <a href="#s13"><span class="num">13</span><span>Accessibility</span><span class="leader"></span><span class="pg">↘</span></a>
+  <a href="#s14"><span class="num">14</span><span>PWA shell</span><span class="leader"></span><span class="pg">↘</span></a>
+  <a href="#s15"><span class="num">15</span><span>Phase 1 — concrete tasks</span><span class="leader"></span><span class="pg">↘</span></a>
+  <a href="#s16"><span class="num">16</span><span>Open questions & pushback</span><span class="leader"></span><span class="pg">↘</span></a>
+</nav>
+
+<!-- ============ 00 How to read ============ -->
+<section class="s" id="s00">
+  <div class="head"><span class="n">00</span><h2>How to read this doc</h2></div>
+  <p>This document is the design counterpart to <code>PLAN.md</code>. <code>PLAN.md</code> is the architectural source of truth (tech stack, schemas, agent loop, deployment). This doc is the visual & interaction source of truth (tokens, components, layouts, motion, states). Where the two overlap, this doc <em>illustrates</em> what <code>PLAN.md</code> <em>specifies</em> — they should never disagree; if they do, raise it.</p>
+  <p>The interactive prototype that informed every spec below lives at <code>Hyble&nbsp;AI&nbsp;Menu&nbsp;MVP.html</code> in the design project. Open it side-by-side with this doc — for any "how should this feel" question, the prototype is the answer.</p>
+  <div class="callout">
+    <span class="lab">Build order</span>
+    Phases 1–5 are defined in <code>PLAN.md §10</code>. This doc is structured to be read top-to-bottom once, then dipped into per-phase. Sections 02–05 are reference material (build the design system once); 06–14 are per-screen / per-state.
+  </div>
+</section>
+
+<!-- ============ 01 Visual ============ -->
+<section class="s" id="s01">
+  <div class="head"><span class="n">01</span><h2>Visual direction</h2></div>
+  <h3>Editorial typographic, AI-as-engine</h3>
+  <p>The app is a calm, magazine-grade workspace where the <em>generated menu</em> is the only loud thing on screen. The chrome is restrained — wine-industry sophistication without enterprise stiffness, AI capabilities without consumer-toy sparkle. We selected this direction (over a chat-playground or Canva-clutter alternative) because reps are time-poor, often working in dim bars, and a cluttered chrome competes with the menu they need to see.</p>
+
+  <h3>Principles</h3>
+  <ol>
+    <li><strong>The menu is the hero.</strong> App chrome never uses customer brand colors; those only appear inside the generated artwork, on customer dropdown badges, and on Orders metadata pills.</li>
+    <li><strong>One accent.</strong> Oxblood in light, warmer rust in dark. Used only on primary CTAs, active rail state, focus rings, and inline-link emphasis. Anything else is ink/paper.</li>
+    <li><strong>AI is invisible.</strong> No gradients on chrome, no shimmer, no sparkle icons. The streaming SSE skeleton (see §08) <em>is</em> the AI cue — and that's enough.</li>
+    <li><strong>Copy is warm and human.</strong> "Let's build a menu," "We'll save your draft," "Thanks for the photo." Industry-savvy without slang.</li>
+    <li><strong>Print-grade typography.</strong> Display serif for the prompt sentence, screen titles, and marketing surfaces only. Mono for metadata, eyebrows, status. Sans for everything else.</li>
+  </ol>
+
+  <h3>Anti-references</h3>
+  <p>Avoid: sparkle/star iconography, gradient hero panels, glassy translucent surfaces, Canva-style toolbar density, ChatGPT's bare playground UI, generic SaaS card-grid dashboards, soft-rounded 24px+ corners, mascots / illustrations.</p>
+</section>
+
+<!-- ============ 02 Themes ============ -->
+<section class="s" id="s02">
+  <div class="head"><span class="n">02</span><h2>Themes — light &amp; dark</h2></div>
+  <p>Both themes are first-class. Light is paper-warm with oxblood accent; dark is wine-black with a warmer rust accent (oxblood loses chroma at low lightness, so the hue rotates +5° and chroma rises). Rules and ink colors share the same warm-neutral hue across themes so type feels identical in tone.</p>
+
+  <div class="themes">
+    <!-- LIGHT -->
+    <div class="theme-card light">
+      <div class="label"><span>Light · Paper</span><span>data-theme=&quot;light&quot;</span></div>
+      <div class="swatches">
+        <div class="swatch" style="background:oklch(98.6% .005 80)"></div>
+        <div class="swatch" style="background:oklch(96.8% .006 80)"></div>
+        <div class="swatch" style="background:oklch(94.0% .007 80)"></div>
+        <div class="swatch" style="background:oklch(88.0% .009 80)"></div>
+        <div class="swatch" style="background:oklch(54.0% .011 60)"></div>
+        <div class="swatch" style="background:oklch(20.5% .012 60)"></div>
+        <div class="swatch" style="background:oklch(46.0% .135 25)"></div>
+      </div>
+      <div class="sw-label"><span>paper</span><span>p-2</span><span>p-3</span><span>rule</span><span>ink-3</span><span>ink</span><span>accent</span></div>
+      <hr/>
+      <dl>
+        <dt>--paper</dt><dd>oklch(98.6% .005 80)</dd>
+        <dt>--paper-2</dt><dd>oklch(96.8% .006 80)</dd>
+        <dt>--paper-3</dt><dd>oklch(94.0% .007 80)</dd>
+        <dt>--rule</dt><dd>oklch(88.0% .009 80)</dd>
+        <dt>--rule-soft</dt><dd>oklch(92.0% .008 80)</dd>
+        <dt>--ink</dt><dd>oklch(20.5% .012 60)</dd>
+        <dt>--ink-2</dt><dd>oklch(38.0% .012 60)</dd>
+        <dt>--ink-3</dt><dd>oklch(54.0% .011 60)</dd>
+        <dt>--ink-4</dt><dd>oklch(68.0% .010 80)</dd>
+        <dt>--accent</dt><dd>oklch(46.0% .135 25)</dd>
+        <dt>--accent-soft</dt><dd>oklch(94% .018 25)</dd>
+      </dl>
+      <div class="demo">
+        Create a <span class="slot">cocktail menu</span> for <span class="slot">Hyatt Regency</span> <span class="accent">Generate</span>
+      </div>
+    </div>
+
+    <!-- DARK -->
+    <div class="theme-card dark">
+      <div class="label"><span>Dark · Wine-black</span><span>data-theme=&quot;dark&quot;</span></div>
+      <div class="swatches">
+        <div class="swatch" style="background:oklch(15.5% .008 60)"></div>
+        <div class="swatch" style="background:oklch(18.2% .009 60)"></div>
+        <div class="swatch" style="background:oklch(22.0% .010 60)"></div>
+        <div class="swatch" style="background:oklch(28.0% .012 60)"></div>
+        <div class="swatch" style="background:oklch(60.0% .010 80)"></div>
+        <div class="swatch" style="background:oklch(94.0% .008 80)"></div>
+        <div class="swatch" style="background:oklch(62.0% .140 30)"></div>
+      </div>
+      <div class="sw-label"><span>paper</span><span>p-2</span><span>p-3</span><span>rule</span><span>ink-3</span><span>ink</span><span>accent</span></div>
+      <hr/>
+      <dl>
+        <dt>--paper</dt><dd>oklch(15.5% .008 60)</dd>
+        <dt>--paper-2</dt><dd>oklch(18.2% .009 60)</dd>
+        <dt>--paper-3</dt><dd>oklch(22.0% .010 60)</dd>
+        <dt>--rule</dt><dd>oklch(28.0% .012 60)</dd>
+        <dt>--rule-soft</dt><dd>oklch(24.0% .010 60)</dd>
+        <dt>--ink</dt><dd>oklch(94.0% .008 80)</dd>
+        <dt>--ink-2</dt><dd>oklch(78.0% .010 80)</dd>
+        <dt>--ink-3</dt><dd>oklch(60.0% .010 80)</dd>
+        <dt>--ink-4</dt><dd>oklch(44.0% .010 80)</dd>
+        <dt>--accent</dt><dd>oklch(62.0% .140 30)</dd>
+        <dt>--accent-soft</dt><dd>oklch(28% .040 30)</dd>
+      </dl>
+      <div class="demo">
+        Create a <span class="slot">cocktail menu</span> for <span class="slot">Hyatt Regency</span> <span class="accent">Generate</span>
+      </div>
+    </div>
+  </div>
+
+  <h4>Switching</h4>
+  <p>System default on first load (<code>prefers-color-scheme</code>); manual override persisted in <code>localStorage["hyble.theme"]</code> as <code>"light" | "dark" | "system"</code>. The toggle lives in the rail footer (desktop) and in Settings (mobile, post-MVP). All components must use the CSS variable tokens — no hardcoded colors anywhere — so theme swap is instant and complete.</p>
+  <h4>Contrast</h4>
+  <p>All <code>--ink</code>/<code>--paper</code> pairs and <code>--accent</code>/<code>--accent-ink</code> pairs verified against WCAG AA (≥ 4.5:1 for body, ≥ 3:1 for large/UI). <code>--ink-3</code> on <code>--paper</code> is borderline AA Large only — use it for <em>secondary</em> meta only, never for required information.</p>
+</section>
+
+<!-- ============ 03 Design tokens ============ -->
+<section class="s" id="s03">
+  <div class="head"><span class="n">03</span><h2>Design tokens</h2></div>
+  <p>All tokens live in <code>tokens.css</code> at <code>apps/web/src/styles/tokens.css</code>. Variables expressed in <code>oklch()</code>; Tailwind's <code>@theme inline</code> consumes them. Nothing should ever land in code as a hex literal.</p>
+
+  <div class="tokens">
+    <div class="h">Token</div><div class="h">Light value</div><div class="h">Dark value</div>
+
+    <div class="name">--paper</div>          <div class="val">oklch(98.6% .005 80)</div> <div class="val">oklch(15.5% .008 60)</div>
+    <div class="name">--paper-2</div>        <div class="val">oklch(96.8% .006 80)</div> <div class="val">oklch(18.2% .009 60)</div>
+    <div class="name">--paper-3</div>        <div class="val">oklch(94.0% .007 80)</div> <div class="val">oklch(22.0% .010 60)</div>
+    <div class="name">--rule</div>           <div class="val">oklch(88.0% .009 80)</div> <div class="val">oklch(28.0% .012 60)</div>
+    <div class="name">--rule-soft</div>      <div class="val">oklch(92.0% .008 80)</div> <div class="val">oklch(24.0% .010 60)</div>
+    <div class="name">--ink</div>            <div class="val">oklch(20.5% .012 60)</div> <div class="val">oklch(94.0% .008 80)</div>
+    <div class="name">--ink-2</div>          <div class="val">oklch(38.0% .012 60)</div> <div class="val">oklch(78.0% .010 80)</div>
+    <div class="name">--ink-3</div>          <div class="val">oklch(54.0% .011 60)</div> <div class="val">oklch(60.0% .010 80)</div>
+    <div class="name">--ink-4</div>          <div class="val">oklch(68.0% .010 80)</div> <div class="val">oklch(44.0% .010 80)</div>
+    <div class="name">--accent</div>         <div class="val">oklch(46.0% .135 25)</div> <div class="val">oklch(62.0% .140 30)</div>
+    <div class="name">--accent-ink</div>     <div class="val">oklch(98% .005 80)</div>   <div class="val">oklch(15.5% .008 60)</div>
+    <div class="name">--accent-soft</div>    <div class="val">oklch(94% .018 25)</div>   <div class="val">oklch(28% .040 30)</div>
+    <div class="name">--warn</div>           <div class="val">oklch(60% .16 50)</div>    <div class="val">oklch(72% .16 50)</div>
+    <div class="name">--ok</div>             <div class="val">oklch(56% .10 150)</div>   <div class="val">oklch(64% .10 150)</div>
+  </div>
+
+  <h3>Type</h3>
+  <table>
+    <thead><tr><th>Role</th><th>Family</th><th>Sizes</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="k">display</td><td>Instrument Serif</td><td>28 / 32 / 40 / 56</td><td>Letterspacing −0.012em → −0.018em with size. Used only for prompt sentence, screen titles, marketing.</td></tr>
+      <tr><td class="k">ui</td><td>Geist</td><td>13 / 14 / 14.5 / 15.5</td><td>Body. Default 14px, line-height 1.5–1.65.</td></tr>
+      <tr><td class="k">mono</td><td>JetBrains Mono</td><td>10.5 / 11 / 11.5 / 12</td><td>Eyebrows, IDs, costs, status, code. Letterspacing +.04em → +.12em.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Spacing &amp; radius</h3>
+  <table>
+    <thead><tr><th>Token</th><th>px</th><th>Tailwind</th></tr></thead>
+    <tbody>
+      <tr><td class="k">--space-1…16</td><td>4 · 8 · 12 · 16 · 20 · 24 · 32 · 40 · 48 · 64</td><td>p-1 → p-16</td></tr>
+      <tr><td class="k">--r-1 / -2 / -3 / -4 / -pill</td><td>3 / 6 / 10 / 14 / 999</td><td>rounded-[3px] → rounded-full</td></tr>
+    </tbody>
+  </table>
+  <p>Inputs use 6px. Cards 10–14px. Pills only for badges and the mobile toggle. <strong>No 24px+ radii</strong> — they read as consumer-app and break the editorial register.</p>
+
+  <h3>Shadow</h3>
+  <table>
+    <thead><tr><th>Token</th><th>Value</th><th>Use</th></tr></thead>
+    <tbody>
+      <tr><td class="k">--shadow-1</td><td>0 1px 0 rgba(20,15,10,.04), 0 1px 2px rgba(20,15,10,.04)</td><td>Resting cards.</td></tr>
+      <tr><td class="k">--shadow-2</td><td>0 1px 0 rgba(20,15,10,.04), 0 8px 24px -10px rgba(20,15,10,.10)</td><td>Popovers, dropdowns.</td></tr>
+      <tr><td class="k">--shadow-3</td><td>0 2px 0 rgba(20,15,10,.05), 0 22px 60px -20px rgba(20,15,10,.18)</td><td>Modals; menu preview surface.</td></tr>
+    </tbody>
+  </table>
+  <p>Dark theme drops shadow alpha to <code>.3 / .55 / .7</code> respectively. Never use box-shadow as decoration — only to communicate elevation.</p>
+
+  <h3>Motion</h3>
+  <table>
+    <thead><tr><th>Token</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td class="k">--ease-out</td><td>cubic-bezier(.22, .8, .28, 1)</td></tr>
+      <tr><td class="k">--ease-in</td><td>cubic-bezier(.5, 0, .8, .4)</td></tr>
+      <tr><td class="k">--ease-spring</td><td>cubic-bezier(.2, 1.2, .3, 1)</td></tr>
+      <tr><td class="k">--d-fast / -base / -slow / -xslow</td><td>140ms / 220ms / 420ms / 720ms</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 04 Wiring ============ -->
+<section class="s" id="s04">
+  <div class="head"><span class="n">04</span><h2>Tailwind &amp; shadcn theme wiring</h2></div>
+  <p>Two-step wiring: token CSS file + Tailwind theme + shadcn variable map. Order matters — tokens.css imports before <code>tailwindcss</code> so <code>@theme inline</code> can reference them at build.</p>
+
+  <h4>1) <code>apps/web/src/styles/tokens.css</code></h4>
+  <pre><code>:root {
+  --paper: oklch(98.6% .005 80);
+  --ink:   oklch(20.5% .012 60);
+  --accent: oklch(46% .135 25);
+  /* …full set in §03… */
+}
+[data-theme="dark"] {
+  --paper: oklch(15.5% .008 60);
+  --ink:   oklch(94% .008 80);
+  --accent: oklch(62% .14 30);
+  /* …full dark set… */
+}</code></pre>
+
+  <h4>2) <code>apps/web/src/styles/globals.css</code></h4>
+  <pre><code>@import "./tokens.css";
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--paper);
+  --color-foreground: var(--ink);
+  --color-muted:      var(--paper-2);
+  --color-muted-foreground: var(--ink-3);
+  --color-card:       var(--paper);
+  --color-card-foreground: var(--ink);
+  --color-border:     var(--rule);
+  --color-input:      var(--rule);
+  --color-ring:       var(--accent);
+  --color-primary:    var(--accent);
+  --color-primary-foreground: var(--accent-ink);
+  --color-secondary:  var(--paper-2);
+  --color-secondary-foreground: var(--ink);
+  --color-destructive: var(--warn);
+  --font-display: var(--font-display);
+  --font-sans:    var(--font-ui);
+  --font-mono:    var(--font-mono);
+  --radius:       10px;
+}</code></pre>
+
+  <h4>3) shadcn install</h4>
+  <p>Run <code>pnpm dlx shadcn@latest init</code> with <code>--style new-york --base-color neutral</code>, then install: <code>button input textarea label combobox popover command badge alert skeleton separator toggle-group scroll-area dialog table sonner</code>. After install, edit each component's <code>cva</code> default variants to point at our tokens (e.g. Button's <code>default</code> variant uses <code>bg-primary text-primary-foreground</code> which already resolves correctly through step 2).</p>
+
+  <h4>Theme switch hook</h4>
+  <pre><code>// apps/web/src/lib/theme.ts
+export type Theme = "light" | "dark" | "system";
+export function applyTheme(t: Theme) {
+  const resolved =
+    t === "system"
+      ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+      : t;
+  document.documentElement.dataset.theme = resolved;
+  localStorage.setItem("hyble.theme", t);
+}</code></pre>
+</section>
+
+<!-- ============ 05 Component inventory ============ -->
+<section class="s" id="s05">
+  <div class="head"><span class="n">05</span><h2>Component inventory · shadcn map</h2></div>
+  <table>
+    <thead><tr><th>Component</th><th>shadcn primitive</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Rail nav</td><td>Custom — Button(variant=ghost) + active rule</td><td>2 items only. Active = oxblood 2px left rule + ink label.</td></tr>
+      <tr><td>HeaderBar</td><td>Custom flex</td><td>Display title + meta + right-side icon buttons.</td></tr>
+      <tr><td>Customer dropdown</td><td>Combobox (Popover + Command)</td><td>Search-required at 4+ items. Recent group at top once we have telemetry.</td></tr>
+      <tr><td>Type slot, image slot</td><td>Popover</td><td>Slot content varies; popover shell shared.</td></tr>
+      <tr><td>Prompt textarea</td><td>Textarea</td><td>Auto-grow; min 1 row, max 4. Ghost border.</td></tr>
+      <tr><td>Generate button</td><td>Button(variant=default)</td><td>bg=primary (oxblood). Locked-busy state shows ellipsis with reduced-motion-respecting pulse.</td></tr>
+      <tr><td>Chat composer</td><td>Textarea + IconButton</td><td>⌘↵ submit. Enter = newline (matches ChatGPT muscle memory).</td></tr>
+      <tr><td>Status pill / badge</td><td>Badge</td><td>Variants: live (accent), done (ok), pending (ink-3), error (warn).</td></tr>
+      <tr><td>Skeleton (menu fill)</td><td>Skeleton</td><td>Keyed to SSE step IDs (§08). Reveal value 0.05 → 0.95.</td></tr>
+      <tr><td>Error / compliance</td><td>Alert</td><td>variant=destructive for compliance. Lives inline in chat thread, not as toast.</td></tr>
+      <tr><td>Orders list</td><td>Table (data-table pattern)</td><td>No zebra. Single sort default = recent.</td></tr>
+      <tr><td>Order detail</td><td>3-col layout: ScrollArea · main · ScrollArea</td><td>Generation history (left), preview (center), metadata (right).</td></tr>
+      <tr><td>Mobile toggle</td><td>ToggleGroup(variant=outline)</td><td>Pill-styled. Sticky top.</td></tr>
+      <tr><td>Auth</td><td>Input + Button</td><td>2-col layout. SSO disabled in MVP.</td></tr>
+      <tr><td>Toast</td><td>sonner</td><td>For non-critical confirmations only (Save to order). Never for errors.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 06 Screen specs ============ -->
+<section class="s" id="s06">
+  <div class="head"><span class="n">06</span><h2>Screen specs</h2></div>
+
+  <h3>App shell</h3>
+  <pre class="layout">┌─────────┬─────────────────────────────────────────────┐
+│         │  ┌─ HeaderBar ───────────────────────────┐  │
+│  Rail   │  │ Title · Subtitle      [theme] [+New] │  │
+│ (72px)  │  └───────────────────────────────────────┘  │
+│         │                                             │
+│ Create  │           ROUTE OUTLET                      │
+│ Orders  │                                             │
+│         │                                             │
+└─────────┴─────────────────────────────────────────────┘</pre>
+  <p>Rail width: 72px collapsed (icon + label below) on desktop ≥ 1024px; full hidden on mobile (replaced by bottom tab bar of the same two items). HeaderBar is sticky; 56px tall.</p>
+
+  <h3>Routes</h3>
+  <table>
+    <thead><tr><th>Path</th><th>Screen</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="path">/login</td><td>Auth</td><td>Email + password. SSO button disabled.</td></tr>
+      <tr><td class="path">/create</td><td>Create — initial</td><td>Empty prompt builder.</td></tr>
+      <tr><td class="path">/create/:orderId</td><td>Create — active</td><td>Split layout. Loads on first generation.</td></tr>
+      <tr><td class="path">/orders</td><td>Orders list</td><td>Empty state if 0.</td></tr>
+      <tr><td class="path">/orders/:id</td><td>Order detail</td><td>3-col.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 07 Create flow ============ -->
+<section class="s" id="s07">
+  <div class="head"><span class="n">07</span><h2>Create flow — initial → active</h2></div>
+
+  <h3>Initial — the prompt sentence</h3>
+  <p>The most important component in the product. A single sentence the user fills in, set in the display serif at 32–40px depending on viewport. Slots are inline-block elements with a dashed underline that opens a popover on click.</p>
+  <pre class="layout">         "Let's build a menu."
+         (eyebrow · ink-3 · mono)
+
+         Create a [type ▾] for [customer ▾]
+         with this menu [+ image] and make
+         the following changes: [free text…]
+
+                            [ Generate → ]</pre>
+  <p>Slots:</p>
+  <ul>
+    <li><strong>type</strong> — popover with two large radio cards: <em>Wine menu</em>, <em>Cocktail menu</em>.</li>
+    <li><strong>customer</strong> — Combobox. Selecting pulls in brand kit + primary state. Selected state shows brand color dot + name + state badge.</li>
+    <li><strong>image</strong> — optional upload. Desktop: drag-drop on slot popover + file input. Mobile: native sheet, <code>capture=environment</code>.</li>
+    <li><strong>free text</strong> — auto-grow textarea inline. Empty state shows ghost copy.</li>
+  </ul>
+  <p>Generate button disables until <em>type</em> and <em>customer</em> are set. Image and free-text are optional. The presence of <em>image</em> flips the agent into recreate mode (~60% of orders per <code>PLAN.md §2</code>).</p>
+
+  <h3>Active — split layout</h3>
+  <pre class="layout">┌─ Chat (38%, min 380, max 460) ─┬─ Design ───────────────┐
+│ ▌ first message (the prompt)   │  [Download Regen Save] │
+│ ▌ assistant: "Reading…"        │  ┌──────────────────┐  │
+│ ▌ assistant: image thumbnail   │  │                  │  │
+│   "Anything to tweak?"         │  │   Menu render    │  │
+│ ▌ user: "Bigger headline"      │  │   (full bleed)   │  │
+│ ▌ assistant: image thumbnail   │  │                  │  │
+│                                │  └──────────────────┘  │
+│ ┌──────────────────────────┐   │                        │
+│ │ Reply to Hyble…   ⌘↵ →  │   │                        │
+│ └──────────────────────────┘   │                        │
+└────────────────────────────────┴────────────────────────┘</pre>
+  <p>Each new chat turn triggers a new generation. The right panel always shows the <em>latest</em> generation; clicking a thumbnail in chat history restores that generation to the right panel non-destructively (does not branch the order — <code>parent_generation_id</code> still chains the next turn from the latest, per <code>PLAN.md §4</code>).</p>
+</section>
+
+<!-- ============ 08 SSE generating ============ -->
+<section class="s" id="s08">
+  <div class="head"><span class="n">08</span><h2>SSE generating state</h2></div>
+  <p>SSE events from <code>PLAN.md §3</code> drive both the chat-side checklist and the design-side reveal. The menu skeleton renders at the correct dimensions from the start so the page never reflows when the design lands.</p>
+
+  <div class="seq">
+    <div class="t">event</div><div class="e"><strong>visual</strong></div>
+    <div class="t">reading_reference</div><div class="e">Top rule + customer brand band materialise on the menu surface. Chat: "Reading the menu you sent…" with spinner.</div>
+    <div class="t">building_prompt</div><div class="e">Headline + subheadline reveal. Chat: "Composing the prompt."</div>
+    <div class="t">generating</div><div class="e">Body items fill in row-by-row over ~2.2s. Reveal value 0.05 → 0.95. Chat: "Generating."</div>
+    <div class="t">validating</div><div class="e">Footer disclaimer materialises. Chat: "Validating compliance."</div>
+    <div class="t">extracting_metadata</div><div class="e">Last 5%. Generation thumbnail chip appears in chat history. Chat: "Tagging metadata."</div>
+    <div class="t">done</div><div class="e">Menu hands off to the live render. Status pill turns ok-green for 600ms, then fades.</div>
+    <div class="t">error</div><div class="e">Skeleton freezes. Inline alert in chat thread (see §09).</div>
+  </div>
+
+  <h4>Implementation</h4>
+  <pre><code>// apps/web/src/lib/sse.ts
+export function streamGenerate(orderId: string, onEvent: (e: SseEvent) =&gt; void) {
+  const es = new EventSource(`/api/orders/${orderId}/generate/stream`);
+  ["reading_reference","building_prompt","generating","validating","extracting_metadata","done","error"]
+    .forEach(name =&gt; es.addEventListener(name, ev =&gt; onEvent({ name, data: JSON.parse(ev.data) })));
+  return () =&gt; es.close();
+}</code></pre>
+  <p>Status copy is the <em>only</em> place AI vocabulary peeks through. Lock these to active verbs in present continuous and align them with whatever the agent loop ends up calling its phases.</p>
+</section>
+
+<!-- ============ 09 States ============ -->
+<section class="s" id="s09">
+  <div class="head"><span class="n">09</span><h2>States — error, empty, offline</h2></div>
+
+  <h4>Error (3 flavors, all inline in chat thread)</h4>
+  <table>
+    <thead><tr><th>Cause</th><th>Treatment</th><th>Recovery</th></tr></thead>
+    <tbody>
+      <tr><td>API failure (5xx)</td><td>Soft Alert. ink-2 body, neutral border.</td><td>"Try again" button. Cost not charged.</td></tr>
+      <tr><td>Compliance block</td><td>Alert with accent-tinted left rule.</td><td>"Apply fix and retry" — auto-applies the missing disclaimer/edit and re-runs.</td></tr>
+      <tr><td>Rate limit / cap</td><td>Alert with cap counter (<code>32/50 today</code>).</td><td>"Save draft" action. Marketing Ops users see admin-lift link.</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Empty</h4>
+  <ul>
+    <li><strong>Orders empty</strong> — paper-textured menu placeholder with three rule lines, "No orders yet." in display serif (28px), single accent CTA "Create your first menu".</li>
+    <li><strong>Customer dropdown empty</strong> — "No customers match that search" with link "Request a customer" (out of MVP scope; placeholder).</li>
+  </ul>
+
+  <h4>Offline</h4>
+  <p>Service worker serves cached shell + last 5 orders + the latest generation per order (LRU). Compose-new is disabled; the prompt area shows a paper-card with copy "Offline — generations resume when you reconnect" and a passive online-detector that re-enables itself within 1s of <code>navigator.onLine</code> flipping.</p>
+</section>
+
+<!-- ============ 10 Mobile ============ -->
+<section class="s" id="s10">
+  <div class="head"><span class="n">10</span><h2>Mobile responsive</h2></div>
+  <table>
+    <thead><tr><th>Aspect</th><th>Spec</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Breakpoint</td><td>&lt; 768px = mobile (Tailwind <code>md</code>). Single hard breakpoint — no tablet-specific layouts. ≥ 1024px = full split.</td></tr>
+      <tr><td class="k">Layout</td><td>Stacked. Design is one full-screen view; Chat is the other. They never share screen real estate.</td></tr>
+      <tr><td class="k">Toggle</td><td>Pill-shaped <code>ToggleGroup</code> at top: "Design / Chat". 32px tall, full width minus 24px gutters. Sticky.</td></tr>
+      <tr><td class="k">Gesture</td><td>Horizontal swipe between the two views (320ms transform), in addition to the toggle. Edge-only — chat composer must NOT swallow drags.</td></tr>
+      <tr><td class="k">Composer</td><td>Sticky to bottom; uses <code>dvh</code> + <code>visualViewport</code> listener so iOS keyboard doesn't push it off-screen.</td></tr>
+      <tr><td class="k">Hit targets</td><td>Generate / Send / Regenerate ≥ 44px. Slot popovers expand to 80vw.</td></tr>
+      <tr><td class="k">Image upload</td><td>Native file input with <code>capture=environment</code> opens the camera-or-gallery sheet. Big drop zone is desktop-only.</td></tr>
+      <tr><td class="k">Bottom tabs</td><td>Two items only — Create, Orders. Mirrors the rail.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 11 Interactions ============ -->
+<section class="s" id="s11">
+  <div class="head"><span class="n">11</span><h2>Interaction specs</h2></div>
+  <table>
+    <thead><tr><th>Interaction</th><th>Spec</th></tr></thead>
+    <tbody>
+      <tr><td>Customer dropdown</td><td>Combobox; search-required at 4+ items in production. Recent customers section above results once telemetry is available. Each row: brand color dot · customer name · primary state badge.</td></tr>
+      <tr><td>Image upload</td><td>Desktop: drag-drop on slot popover + file input. Mobile: native sheet, <code>capture=environment</code>. Strip EXIF and resize to ≤ 2048px before upload to control bandwidth.</td></tr>
+      <tr><td>Regenerate</td><td>Always shows estimated cost (e.g. "~$0.04") beside the label. Holds confirm-state for 800ms after click before firing — drift-protection against thumb double-tap on phones in dim bars.</td></tr>
+      <tr><td>Chat input</td><td>Auto-grow to 200px max. ⌘↵ to send. Enter alone = newline (matches reps' ChatGPT muscle memory).</td></tr>
+      <tr><td>Save to order</td><td>On click, current generation becomes <code>order.final_generation_id</code>. Chat thread persists. Sonner toast confirms.</td></tr>
+      <tr><td>Theme toggle</td><td>Rail footer (desktop). Cycles light → dark → system → light.</td></tr>
+      <tr><td>Keyboard</td><td><code>⌘K</code> opens customer combobox. <code>⌘↵</code> submits any open composer. <code>Esc</code> closes any popover.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 12 Animation ============ -->
+<section class="s" id="s12">
+  <div class="head"><span class="n">12</span><h2>Animation &amp; motion</h2></div>
+  <h3>The morph — initial → active</h3>
+  <p>The brief calls this out as the critical moment. The original prompt sentence becomes the first chat message; the page never feels like it navigated.</p>
+  <div class="seq">
+    <div class="t">0–60ms</div><div class="e"><strong>Button latch.</strong> Generate label fades to "…" and the button locks (<code>aria-busy=true</code>). No spinner — copy alone signals work.</div>
+    <div class="t">60–360ms</div><div class="e"><strong>The morph.</strong> The prompt sentence translates from page-center to the top of where the chat panel will live, scaling 1.0 → 0.7. <code>transform-origin: top left</code>. <code>--ease-out</code>. Concurrently the right half of the viewport reveals the design surface from a 24px translateX, opacity 0 → 1.</div>
+    <div class="t">360–420ms</div><div class="e"><strong>Split commits.</strong> Chat panel (38% / min 380px) and design surface separate via a 1px rule. The morphed sentence settles into the first chat-message card.</div>
+    <div class="t">420ms+</div><div class="e"><strong>SSE begins.</strong> "Hyble · working" header appears with the per-step checklist. Skeleton starts filling on the right (§08).</div>
+  </div>
+  <p>The reverse (active → initial) is not exposed. New menus start a new order from the rail.</p>
+
+  <h3>Other motion rules</h3>
+  <ul>
+    <li>Popovers: 140ms scale 0.98 → 1, opacity 0 → 1, <code>--ease-spring</code>.</li>
+    <li>Toasts: slide-in 220ms from bottom-right; auto-dismiss 4s.</li>
+    <li>Theme switch: instant. No transition on color (it looks lazy at scale).</li>
+    <li><code>prefers-reduced-motion</code>: morph collapses to opacity cross-fade only; no transform, no scale. Skeleton fill becomes a single fade-in.</li>
+  </ul>
+</section>
+
+<!-- ============ 13 A11y ============ -->
+<section class="s" id="s13">
+  <div class="head"><span class="n">13</span><h2>Accessibility</h2></div>
+  <ul>
+    <li>All interactive surfaces meet WCAG AA contrast in both themes (verified §02).</li>
+    <li>Focus ring uses <code>--accent</code>, 2px outline + 2px offset. Never removed.</li>
+    <li>Slot popovers are real <code>&lt;button&gt;</code>s with <code>aria-haspopup=&quot;dialog&quot;</code> and visible labels for screen readers — the visual "fill in a sentence" treatment is purely decorative on top.</li>
+    <li>Generating state announces SSE step transitions via <code>aria-live=&quot;polite&quot;</code> on a hidden region.</li>
+    <li>Theme toggle is a real toggle button, not a checkbox; announces "Light theme active / Dark theme active".</li>
+    <li>Skeletons are <code>role=&quot;status&quot;</code> with <code>aria-label=&quot;Generating menu&quot;</code>.</li>
+    <li>Keyboard shortcuts documented in a help dialog (<code>?</code> opens it; out-of-MVP nice-to-have).</li>
+  </ul>
+</section>
+
+<!-- ============ 14 PWA ============ -->
+<section class="s" id="s14">
+  <div class="head"><span class="n">14</span><h2>PWA shell</h2></div>
+  <table>
+    <thead><tr><th>Asset</th><th>Spec</th></tr></thead>
+    <tbody>
+      <tr><td>App icon</td><td>Wordmark "h" set in Instrument Serif, oxblood on cream. Maskable at 1024 + monochrome at 192/512.</td></tr>
+      <tr><td>Splash</td><td>Cream background, centered wordmark. iOS theme-color matches paper. No spinner — the app boots fast enough.</td></tr>
+      <tr><td>Install prompt</td><td>In-app banner appears on Orders screen after the user has saved 1 order. Dismissable; reappears once after 30 days.</td></tr>
+      <tr><td>Offline</td><td>Cached shell + last 5 orders + the latest generation per order (LRU). See §09.</td></tr>
+      <tr><td>Manifest</td><td><code>apps/web/public/manifest.webmanifest</code>; configured by <code>vite-plugin-pwa</code> per <code>PLAN.md §7</code>.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 15 Phase 1 ============ -->
+<section class="s" id="s15">
+  <div class="head"><span class="n">15</span><h2>Phase 1 — concrete tasks</h2></div>
+  <p>Aligns with <code>PLAN.md §10</code>. Concrete file paths so Claude Code can pick them up directly.</p>
+  <ol>
+    <li>Repo skeleton — <code>pnpm-workspace.yaml</code>, <code>apps/api</code>, <code>apps/web</code>, <code>packages/shared</code>. TypeScript strict.</li>
+    <li>Fastify <code>/api/health</code> at <code>apps/api/src/server.ts</code>.</li>
+    <li>Vite + React PWA shell at <code>apps/web/src/main.tsx</code>; routes <code>/login /create /orders</code>.</li>
+    <li><strong>Design system primitives:</strong>
+      <ul>
+        <li><code>apps/web/src/styles/tokens.css</code> — full token set per §03 (light + dark).</li>
+        <li><code>apps/web/src/styles/globals.css</code> — Tailwind import + <code>@theme inline</code> per §04.</li>
+        <li><code>apps/web/src/lib/theme.ts</code> — theme switch hook.</li>
+        <li><code>pnpm dlx shadcn@latest init</code> + components per §05.</li>
+        <li>Wire fonts in <code>index.html</code> from Google Fonts (Instrument Serif, Geist, JetBrains Mono).</li>
+      </ul>
+    </li>
+    <li>Postgres + Drizzle schema at <code>apps/api/src/db/schema.ts</code> per <code>PLAN.md §4</code>.</li>
+    <li>Auth (email/password, JWT cookies) at <code>apps/api/src/routes/auth.ts</code> + <code>apps/web/src/routes/login.tsx</code>.</li>
+    <li>Railway deploy working end-to-end. <code>.env.example</code> per <code>PLAN.md §9</code>.</li>
+    <li><strong>App shell screens (static, before the agent lands in Phase 2):</strong>
+      <ul>
+        <li><code>apps/web/src/components/AppFrame.tsx</code> — rail + header layout.</li>
+        <li><code>apps/web/src/routes/create.tsx</code> — initial state only (no SSE yet).</li>
+        <li><code>apps/web/src/routes/orders.tsx</code> — empty state.</li>
+      </ul>
+    </li>
+  </ol>
+  <div class="callout">
+    <span class="lab">Phase 1 acceptance</span>
+    A logged-in user can navigate between Create (initial empty prompt sentence — clickable slots that open empty popovers) and Orders (empty state). Theme toggle works. Deployed to Railway. No agent calls yet.
+  </div>
+</section>
+
+<!-- ============ 16 Open Qs ============ -->
+<section class="s" id="s16">
+  <div class="head"><span class="n">16</span><h2>Open questions &amp; pushback</h2></div>
+  <ol>
+    <li><strong>Hyble brand kit availability.</strong> The system uses Hyble's name and v2 framing only — original visual identity. If there's an existing brand to honor (logo, color, type), grafting it in only requires changes to <code>tokens.css</code> and the wordmark.</li>
+    <li><strong>Customer count.</strong> The Combobox assumes 50–500 customers per rep. If it's tens of thousands, we need server-side typeahead and a "recent" cache, not a Combobox.</li>
+    <li><strong>"Save to order" semantics.</strong> <code>PLAN.md</code> treats orders and generations as separate; this design assumes every Generate creates a draft order on first run, and Save to order finalises it (sets <code>final_generation_id</code>). Confirm — or rework so generations are orphaned until explicitly saved.</li>
+    <li><strong>Cost visibility.</strong> Showing ~$0.04 next to Regenerate may feel hostile to reps. Recommend hiding from rep-tier users; show only to Marketing Ops.</li>
+    <li><strong>Image-only output for v1.</strong> Without img.ly, reps cannot fix a single typo without a full regeneration. At scale this will bite. Worth flagging to product.</li>
+    <li><strong>SSE step copy.</strong> Lock these to active verbs in present continuous; align names with whatever the agent loop ends up calling its phases.</li>
+    <li><strong>Mobile camera flow.</strong> Brief flagged dim-bar photo capture. <code>capture=environment</code> + native sheet handles this. Real-world testing essential — glare on glass-laminated menus is a known pain. Plan a 1-day on-site test in Phase 5.</li>
+    <li><strong>Reference-image cost.</strong> <code>PLAN.md §6</code> flags this; UI surfaces per-call cost. Recommend also surfacing daily total in the rail footer for reps approaching their cap.</li>
+    <li><strong>Compliance UI for Marketing Ops.</strong> Out-of-scope, but somebody needs to maintain disclaimers and brand kits. Phase 6+ tee-up.</li>
+    <li><strong>Architectural pushback (<code>PLAN.md §3</code>).</strong> Single Fastify service serving the PWA + API is correct for MVP. I'd push back gently on "split into two later" — once chargeback Sprint 2 schemas land in <code>shared/</code>, the overhead of pnpm workspaces is the right time to also extract a serverless edge for the SSE endpoint. Streaming under load on a single Node process is the most likely first scaling pinch.</li>
+    <li><strong>PostHog masking (<code>PLAN.md §11.9</code>).</strong> Prompt textarea, chat composer, image-upload filenames, and customer dropdown values all carry potential PII. Add <code>data-ph-no-capture</code> to all four — flag for engineering at instrumentation time.</li>
+  </ol>
+</section>
+
+<footer class="doc-foot">
+  <span>END · Hyble AI Menu MVP · Handoff v0.1</span>
+  <span><a href="Hyble AI Menu MVP.html">↳ open prototype</a></span>
+</footer>
+
+</div>
+
+<!-- Allow theme toggle via ?theme=dark in URL for printing both versions -->
+<script>
+  const t = new URL(location.href).searchParams.get("theme");
+  if (t === "dark") document.documentElement.dataset.theme = "dark";
+</script>
+</body>
+</html>
