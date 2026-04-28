@@ -58,7 +58,7 @@ export function CreatePage() {
       .then(({ customers }) => setCustomerOptions(customers.map(toCustomerOption)))
       .catch(console.error);
     ordersApi.list()
-      .then(({ orders }) => setOrderHistory(orders))
+      .then(({ orders }) => setOrderHistory(orders.filter((o) => o.thumbnail_url)))
       .catch(console.error);
   }, []);
 
