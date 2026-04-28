@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/auth.js';
 import { Rail } from './components/shell/Rail.js';
 import { HeaderBar } from './components/shell/HeaderBar.js';
@@ -7,17 +8,18 @@ import { CreatePage } from './routes/CreatePage.js';
 import { OrdersPage } from './routes/OrdersPage.js';
 import { Ico } from './components/shell/Icons.js';
 
-type Tab = 'create' | 'orders';
 type Theme = 'light' | 'dark';
 
 function AppShell() {
   const { user, loading, logout } = useAuth();
-  const [tab, setTab] = useState<Tab>('create');
+  const navigate = useNavigate();
+  const location = useLocation();
   const [railCollapsed, setRailCollapsed] = useState(true);
   const [theme, setTheme] = useState<Theme>(() =>
     window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   );
   const isMobile = window.innerWidth < 768;
+  const activeSection = location.pathname.startsWith('/orders') ? 'orders' : 'create';
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : '');
@@ -37,24 +39,24 @@ function AppShell() {
     return <AuthScreen />;
   }
 
-  const HEADERS: Record<Tab, { title: string; subtitle: string }> = {
+  const HEADERS: Record<'create' | 'orders', { title: string; subtitle: string }> = {
     create: { title: 'Create', subtitle: 'POS material' },
     orders: { title: 'Orders', subtitle: 'Your history' },
   };
 
-  const header = HEADERS[tab];
+  const header = HEADERS[activeSection];
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Mobile: compact top nav */}
       {isMobile && (
-        <Rail active={tab} onChange={setTab} compact user={user} />
+        <Rail active={activeSection} onChange={(tab) => navigate(`/${tab}`)} compact user={user} />
       )}
 
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* Desktop: left rail */}
         {!isMobile && (
-          <Rail active={tab} onChange={setTab} user={user} collapsed={railCollapsed} onToggle={() => setRailCollapsed((c) => !c)} />
+          <Rail active={activeSection} onChange={(tab) => navigate(`/${tab}`)} user={user} collapsed={railCollapsed} onToggle={() => setRailCollapsed((c) => !c)} />
         )}
 
         {/* Main content */}
@@ -82,8 +84,11 @@ function AppShell() {
             }
           />
           <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-            {tab === 'create' && <CreatePage />}
-            {tab === 'orders' && <OrdersPage onNavigateToCreate={() => setTab('create')} />}
+            <Routes>
+              <Route path="/create/:orderId?" element={<CreatePage />} />
+              <Route path="/orders" element={<OrdersPage onNavigateToCreate={() => navigate('/create')} />} />
+              <Route path="*" element={<Navigate to="/create" replace />} />
+            </Routes>
           </div>
         </div>
       </div>

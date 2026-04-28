@@ -70,7 +70,7 @@ export function Rail({ active, onChange, collapsed = false, onToggle, compact = 
       </div>
 
       {/* Nav items */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         {NAV_ITEMS.map(({ id, label, Icon }) => (
           <button
             key={id}

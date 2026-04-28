@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { PromptSentence, type PromptValues, type CustomerOption } from '../components/create/PromptSentence.js';
 import { ChatPanel, type ChatMessage, SSE_STEPS } from '../components/create/ChatPanel.js';
 import { MenuPreviewSurface } from '../components/create/MenuPreview.js';
@@ -51,6 +52,15 @@ export function CreatePage() {
   const [resuming, setResuming] = useState(false);
   const revealRef = useRef<number>(0);
   const revealAnim = useRef<ReturnType<typeof requestAnimationFrame> | null>(null);
+
+  const { orderId: urlOrderId } = useParams<{ orderId?: string }>();
+  const navigate = useNavigate();
+
+  // Keep refs current for use inside effects without adding to dep arrays
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
+  const orderIdRef = useRef(orderId);
+  orderIdRef.current = orderId;
 
   // Load customers + order history
   useEffect(() => {
@@ -117,6 +127,7 @@ export function CreatePage() {
         },
         onDone: (event) => {
           setOrderId(event.order_id);
+          navigate(`/create/${event.order_id}`, { replace: true });
           setCurrentGenerationId(event.generation_id);
           setCurrentImageUrl(event.image_url);
           animateReveal(1, 400);
@@ -146,7 +157,7 @@ export function CreatePage() {
         },
       },
     );
-  }, [values, animateReveal]);
+  }, [values, animateReveal, navigate]);
 
   const handleInitialGenerate = useCallback(() => {
     if (!values.customer || !values.materialType) return;
@@ -235,6 +246,28 @@ export function CreatePage() {
     }
   }, []);
 
+  // URL-driven: auto-resume when orderId appears in URL, reset when it disappears
+  useEffect(() => {
+    if (!urlOrderId) {
+      // e.g. user clicked "Create" in the rail while in the workspace
+      if (phaseRef.current === 'active') {
+        setPhase('initial');
+        setValues(EMPTY_VALUES);
+        setInitialValues(EMPTY_VALUES);
+        setMessages([]);
+        setGenerating(false);
+        setCurrentImageUrl(undefined);
+        setOrderId(undefined);
+        setReveal(0);
+        revealRef.current = 0;
+      }
+      return;
+    }
+    // Skip if this order is already loaded (e.g. URL updated after generation completed)
+    if (orderIdRef.current === urlOrderId) return;
+    handleResumeOrder(urlOrderId);
+  }, [urlOrderId, handleResumeOrder]);
+
   const handleSave = useCallback(() => {
     // Order is auto-created on generation; just notify user
     alert(`Order saved. ID: ${orderId ?? 'pending'}`);
@@ -275,7 +308,7 @@ export function CreatePage() {
               {orderHistory.map((o) => (
                 <button
                   key={o.order.id}
-                  onClick={() => handleResumeOrder(o.order.id)}
+                  onClick={() => navigate(`/create/${o.order.id}`)}
                   disabled={resuming}
                   style={{
                     display: 'flex', flexDirection: 'column', textAlign: 'left', padding: 0,
