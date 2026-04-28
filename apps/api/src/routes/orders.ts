@@ -87,6 +87,30 @@ export async function orderRoutes(app: FastifyInstance) {
     },
   );
 
+  // Delete an order (cascades to generations + messages)
+  app.delete<{ Params: { id: string } }>(
+    '/:id',
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const { sub: userId } = (request as AuthRequest).user;
+      const { id } = request.params;
+
+      const [existing] = await db
+        .select({ id: schema.orders.id })
+        .from(schema.orders)
+        .where(and(eq(schema.orders.id, id), eq(schema.orders.user_id, userId)))
+        .limit(1);
+
+      if (!existing) return reply.status(404).send({ error: 'Order not found' });
+
+      await db.delete(schema.messages).where(eq(schema.messages.order_id, id));
+      await db.delete(schema.generations).where(eq(schema.generations.order_id, id));
+      await db.delete(schema.orders).where(eq(schema.orders.id, id));
+
+      return reply.send({ ok: true });
+    },
+  );
+
   // Finalise an order
   app.patch<{ Params: { id: string }; Body: { final_generation_id: string } }>(
     '/:id/finalise',

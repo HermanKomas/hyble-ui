@@ -75,6 +75,8 @@ export const orders = {
       method: 'PATCH',
       body: JSON.stringify({ final_generation_id }),
     }),
+  delete: (id: string) =>
+    request<{ ok: boolean }>(`/orders/${id}`, { method: 'DELETE' }),
 };
 
 // ── Image upload ─────────────────────────────────────────────────────────────

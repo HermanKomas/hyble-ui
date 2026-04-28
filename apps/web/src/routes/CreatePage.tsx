@@ -174,6 +174,12 @@ export function CreatePage() {
     return uploadImage(file);
   }, []);
 
+  const handleDeleteOrder = useCallback(async (e: React.MouseEvent, deleteOrderId: string) => {
+    e.stopPropagation();
+    setOrderHistory((prev) => prev.filter((o) => o.order.id !== deleteOrderId));
+    ordersApi.delete(deleteOrderId).catch(console.error);
+  }, []);
+
   const handleResumeOrder = useCallback(async (resumeOrderId: string) => {
     setResuming(true);
     try {
@@ -274,13 +280,26 @@ export function CreatePage() {
                   style={{
                     display: 'flex', flexDirection: 'column', textAlign: 'left', padding: 0,
                     border: '1px solid var(--rule)', borderRadius: 'var(--r-2)',
-                    background: 'var(--paper)', overflow: 'hidden',
+                    background: 'var(--paper)', overflow: 'hidden', position: 'relative',
                     cursor: 'pointer', transition: 'box-shadow 140ms, border-color 140ms',
                     opacity: resuming ? 0.5 : 1,
                   }}
                   onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-2)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--ink-3)'; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = 'none'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--rule)'; }}
                 >
+                  <button
+                    onClick={(e) => handleDeleteOrder(e, o.order.id)}
+                    title="Delete"
+                    style={{
+                      position: 'absolute', top: 6, right: 6, zIndex: 2,
+                      width: 20, height: 20, borderRadius: 999, padding: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: 'rgba(0,0,0,0.45)', border: 'none', cursor: 'pointer',
+                      color: '#fff', fontSize: 13, lineHeight: 1,
+                    }}
+                  >
+                    ×
+                  </button>
                   <div style={{ aspectRatio: '8.5 / 11', background: 'var(--paper-2)', overflow: 'hidden', position: 'relative', flexShrink: 0 }}>
                     {o.thumbnail_url ? (
                       <img src={o.thumbnail_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
