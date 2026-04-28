@@ -13,6 +13,7 @@ type Theme = 'light' | 'dark';
 function AppShell() {
   const { user, loading, logout } = useAuth();
   const [tab, setTab] = useState<Tab>('create');
+  const [railCollapsed, setRailCollapsed] = useState(true);
   const [theme, setTheme] = useState<Theme>(() =>
     window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   );
@@ -53,7 +54,7 @@ function AppShell() {
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* Desktop: left rail */}
         {!isMobile && (
-          <Rail active={tab} onChange={setTab} user={user} />
+          <Rail active={tab} onChange={setTab} user={user} collapsed={railCollapsed} onToggle={() => setRailCollapsed((c) => !c)} />
         )}
 
         {/* Main content */}
