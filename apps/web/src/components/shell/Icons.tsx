@@ -3,11 +3,6 @@
 interface IconProps { s?: number }
 
 export const Ico = {
-  Sparkle: ({ s = 18 }: IconProps) => (
-    <svg width={s} height={s} viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 2 L10.1 7.9 L16 9 L10.1 10.1 L9 16 L7.9 10.1 L2 9 L7.9 7.9 Z"/>
-    </svg>
-  ),
   Create: ({ s = 18 }: IconProps) => (
     <svg width={s} height={s} viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 3h7M3 7h12M3 11h9M3 15h6"/>

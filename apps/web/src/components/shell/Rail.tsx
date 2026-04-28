@@ -1,3 +1,4 @@
+import { Sparkles } from 'lucide-react';
 import { Ico } from './Icons.js';
 
 interface RailProps {
@@ -10,7 +11,7 @@ interface RailProps {
 }
 
 const NAV_ITEMS = [
-  { id: 'create' as const, label: 'Create', Icon: Ico.Sparkle },
+  { id: 'create' as const, label: 'Create', Icon: (p: { size?: number }) => <Sparkles size={p.size ?? 18} strokeWidth={1.4} /> },
   { id: 'orders' as const, label: 'Orders', Icon: Ico.Create },
 ];
 
@@ -69,7 +70,7 @@ export function Rail({ active, onChange, collapsed = false, onToggle, compact = 
       </div>
 
       {/* Nav items */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {NAV_ITEMS.map(({ id, label, Icon }) => (
           <button
             key={id}

@@ -64,7 +64,7 @@ body {
 /* Rail nav */
 .rail-item {
   display: flex; align-items: center; gap: 10px;
-  padding: 8px 10px; border-radius: var(--r-2);
+  padding: 11px 10px; border-radius: var(--r-2);
   font-size: 13.5px; color: var(--ink-2);
   cursor: pointer; transition: background var(--d-fast), color var(--d-fast);
   border: none; background: transparent; width: 100%; text-align: left;
