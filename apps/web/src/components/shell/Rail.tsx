@@ -10,8 +10,8 @@ interface RailProps {
 }
 
 const NAV_ITEMS = [
-  { id: 'create' as const, label: 'Create', Icon: Ico.Create },
-  { id: 'orders' as const, label: 'Orders', Icon: Ico.Orders },
+  { id: 'create' as const, label: 'Create', Icon: Ico.Sparkle },
+  { id: 'orders' as const, label: 'Orders', Icon: Ico.Create },
 ];
 
 function initials(email: string): string {
@@ -69,18 +69,20 @@ export function Rail({ active, onChange, collapsed = false, onToggle, compact = 
       </div>
 
       {/* Nav items */}
-      {NAV_ITEMS.map(({ id, label, Icon }) => (
-        <button
-          key={id}
-          className={`rail-item${active === id ? ' active' : ''}`}
-          onClick={() => onChange(id)}
-          title={collapsed ? label : undefined}
-          style={collapsed ? { justifyContent: 'center', padding: '0' } : {}}
-        >
-          <Icon />
-          {!collapsed && <span>{label}</span>}
-        </button>
-      ))}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {NAV_ITEMS.map(({ id, label, Icon }) => (
+          <button
+            key={id}
+            className={`rail-item${active === id ? ' active' : ''}`}
+            onClick={() => onChange(id)}
+            title={collapsed ? label : undefined}
+            style={collapsed ? { justifyContent: 'center', padding: '0' } : {}}
+          >
+            <Icon />
+            {!collapsed && <span>{label}</span>}
+          </button>
+        ))}
+      </div>
 
       <div style={{ flex: 1 }} />
 
