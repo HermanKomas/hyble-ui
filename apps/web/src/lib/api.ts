@@ -51,6 +51,7 @@ export interface ApiOrder {
   };
   customer: ApiCustomer['customer'];
   brand_kit: ApiCustomer['brand_kit'];
+  thumbnail_url?: string | null;
   generations?: ApiGeneration[];
   messages?: ApiMessage[];
 }

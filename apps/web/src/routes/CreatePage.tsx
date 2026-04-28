@@ -2,9 +2,10 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { PromptSentence, type PromptValues, type CustomerOption } from '../components/create/PromptSentence.js';
 import { ChatPanel, type ChatMessage, SSE_STEPS } from '../components/create/ChatPanel.js';
 import { MenuPreviewSurface } from '../components/create/MenuPreview.js';
-import { customers as customersApi, uploadImage } from '../lib/api.js';
+import { customers as customersApi, orders as ordersApi, uploadImage, type ApiOrder } from '../lib/api.js';
 import { streamGenerate } from '../lib/sse.js';
-import type { SSEEvent } from '@hyble/shared';
+import type { SSEEvent, MaterialType } from '@hyble/shared';
+import { MATERIAL_TYPE_LABELS } from '@hyble/shared';
 
 function toCustomerOption(row: { customer: { id: string; name: string; primary_state: string; brand_kit_id: string; created_at: string }; brand_kit: { supplier_name: string; primary_color_hex: string } }): CustomerOption {
   return {
@@ -14,6 +15,17 @@ function toCustomerOption(row: { customer: { id: string; name: string; primary_s
     supplier_name: row.brand_kit.supplier_name,
     primary_color_hex: row.brand_kit.primary_color_hex,
   };
+}
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(dateStr).toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
 const EMPTY_VALUES: PromptValues = {
@@ -35,13 +47,18 @@ export function CreatePage() {
   const [currentImageUrl, setCurrentImageUrl] = useState<string | undefined>(undefined);
   const [reveal, setReveal] = useState(0);
   const [orderId, setOrderId] = useState<string | undefined>(undefined);
+  const [orderHistory, setOrderHistory] = useState<ApiOrder[]>([]);
+  const [resuming, setResuming] = useState(false);
   const revealRef = useRef<number>(0);
   const revealAnim = useRef<ReturnType<typeof requestAnimationFrame> | null>(null);
 
-  // Load customers
+  // Load customers + order history
   useEffect(() => {
     customersApi.list()
       .then(({ customers }) => setCustomerOptions(customers.map(toCustomerOption)))
+      .catch(console.error);
+    ordersApi.list()
+      .then(({ orders }) => setOrderHistory(orders))
       .catch(console.error);
   }, []);
 
@@ -157,6 +174,61 @@ export function CreatePage() {
     return uploadImage(file);
   }, []);
 
+  const handleResumeOrder = useCallback(async (resumeOrderId: string) => {
+    setResuming(true);
+    try {
+      const orderData = await ordersApi.get(resumeOrderId);
+
+      const customerOption: CustomerOption = {
+        id: orderData.customer.id,
+        name: orderData.customer.name,
+        primary_state: orderData.customer.primary_state,
+        supplier_name: orderData.brand_kit.supplier_name,
+        primary_color_hex: orderData.brand_kit.primary_color_hex,
+      };
+
+      const resumedValues: PromptValues = {
+        materialType: orderData.order.material_type as MaterialType,
+        customer: customerOption,
+        image: null,
+        notes: '',
+      };
+
+      setValues(resumedValues);
+      setInitialValues(resumedValues);
+      setOrderId(orderData.order.id);
+
+      // Reconstruct chat messages from stored messages + generations
+      const genMap = new Map((orderData.generations ?? []).map((g) => [g.id, g]));
+      const chatMessages: ChatMessage[] = (orderData.messages ?? []).map((m) => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        time: new Date(m.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+        generationId: m.generation_id ?? undefined,
+        imageUrl: m.generation_id ? genMap.get(m.generation_id)?.output_image_url : undefined,
+        materialType: resumedValues.materialType ?? undefined,
+      }));
+      setMessages(chatMessages);
+
+      // Show the latest generation in the preview panel
+      const gens = orderData.generations ?? [];
+      const latestGen = gens[gens.length - 1];
+      if (latestGen) {
+        setCurrentImageUrl(latestGen.output_image_url);
+        setCurrentGenerationId(latestGen.id);
+        setReveal(1);
+        revealRef.current = 1;
+      }
+
+      setPhase('active');
+    } catch (err) {
+      console.error('Failed to resume order', err);
+    } finally {
+      setResuming(false);
+    }
+  }, []);
+
   const handleSave = useCallback(() => {
     // Order is auto-created on generation; just notify user
     alert(`Order saved. ID: ${orderId ?? 'pending'}`);
@@ -183,9 +255,55 @@ export function CreatePage() {
           setValues={setValues}
           customers={customerOptions}
           onGenerate={handleInitialGenerate}
-          busy={generating}
+          busy={generating || resuming}
           onUploadImage={handleUploadImage}
         />
+
+        {orderHistory.length > 0 && (
+          <div style={{ maxWidth: 760, width: '100%', margin: '0 auto', padding: '0 24px 56px' }}>
+            <div style={{ borderTop: '1px solid var(--rule)', paddingTop: 32, marginBottom: 20, display: 'flex', alignItems: 'baseline', gap: 10 }}>
+              <span className="eyebrow">Recent designs</span>
+              <span style={{ fontSize: 11.5, color: 'var(--ink-4)' }}>{orderHistory.length} project{orderHistory.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))', gap: 14 }}>
+              {orderHistory.map((o) => (
+                <button
+                  key={o.order.id}
+                  onClick={() => handleResumeOrder(o.order.id)}
+                  disabled={resuming}
+                  style={{
+                    display: 'flex', flexDirection: 'column', textAlign: 'left', padding: 0,
+                    border: '1px solid var(--rule)', borderRadius: 'var(--r-2)',
+                    background: 'var(--paper)', overflow: 'hidden',
+                    cursor: 'pointer', transition: 'box-shadow 140ms, border-color 140ms',
+                    opacity: resuming ? 0.5 : 1,
+                  }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-2)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--ink-3)'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = 'none'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--rule)'; }}
+                >
+                  <div style={{ aspectRatio: '8.5 / 11', background: 'var(--paper-2)', overflow: 'hidden', position: 'relative', flexShrink: 0 }}>
+                    {o.thumbnail_url ? (
+                      <img src={o.thumbnail_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    ) : (
+                      <div className="skeleton" style={{ width: '100%', height: '100%' }} />
+                    )}
+                  </div>
+                  <div style={{ padding: '9px 11px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--ink)', lineHeight: 1.3 }}>
+                      {o.customer.name}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--ink-3)' }}>
+                      {MATERIAL_TYPE_LABELS[o.order.material_type as MaterialType]}
+                    </span>
+                    <span style={{ fontSize: 10.5, color: 'var(--ink-4)', marginTop: 3 }}>
+                      {timeAgo(o.order.updated_at)}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }

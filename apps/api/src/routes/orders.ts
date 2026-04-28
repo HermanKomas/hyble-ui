@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, inArray } from 'drizzle-orm';
 import { db, schema } from '../db/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import type { JWTPayload } from '../middleware/auth.js';
@@ -24,7 +24,23 @@ export async function orderRoutes(app: FastifyInstance) {
       .where(eq(schema.orders.user_id, userId))
       .orderBy(desc(schema.orders.updated_at));
 
-    return reply.send({ orders: rows });
+    // Fetch latest generation per order for thumbnails
+    const thumbnailMap = new Map<string, string>();
+    const orderIds = rows.map((r) => r.order.id);
+    if (orderIds.length > 0) {
+      const gens = await db
+        .select({ order_id: schema.generations.order_id, output_image_key: schema.generations.output_image_key })
+        .from(schema.generations)
+        .where(inArray(schema.generations.order_id, orderIds))
+        .orderBy(desc(schema.generations.created_at));
+      for (const g of gens) {
+        if (!thumbnailMap.has(g.order_id)) thumbnailMap.set(g.order_id, imageApiUrl(g.output_image_key));
+      }
+    }
+
+    return reply.send({
+      orders: rows.map((r) => ({ ...r, thumbnail_url: thumbnailMap.get(r.order.id) ?? null })),
+    });
   });
 
   // Get single order with generations and messages
