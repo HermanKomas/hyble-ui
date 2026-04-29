@@ -38,12 +38,12 @@ function Popover({ open, anchorRef, onClose, children, width = 280, align = 'lef
 
   useEffect(() => {
     if (!open || !anchorRef.current) return;
-    const r = anchorRef.current.getBoundingClientRect();
-    const root = anchorRef.current.closest('[data-popover-root]');
-    const containerRect = root?.getBoundingClientRect();
-    const ox = containerRect?.left ?? 0;
-    const oy = containerRect?.top ?? 0;
-    setPos({ left: r.left - ox + (align === 'right' ? r.width - width : 0), top: r.bottom - oy + 8 });
+    const anchor = anchorRef.current;
+    // Use offset* — always in layout/CSS pixels, unaffected by body zoom
+    setPos({
+      left: anchor.offsetLeft + (align === 'right' ? anchor.offsetWidth - width : 0),
+      top: anchor.offsetTop + anchor.offsetHeight + 8,
+    });
   }, [open, align, width]);
 
   useEffect(() => {
