@@ -8,7 +8,7 @@ export type MaterialType =
 export const MATERIAL_TYPE_LABELS: Record<MaterialType, string> = {
   menu: 'Menu',
   tent_card: 'Tent Card',
-  bar_top_card: 'Bar Top-Card',
+  bar_top_card: 'Coaster',
   shelf_talker: 'Shelf Talker',
   promotional_poster: 'Promotional Poster',
 };

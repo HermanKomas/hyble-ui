@@ -48,7 +48,7 @@ function getMaterialGuidance(type: MaterialType): string {
   const guidance: Record<MaterialType, string> = {
     menu: 'portrait orientation preferred, two-column layout for wine lists, card-style for cocktails. Include section headers, item names, and brief descriptions.',
     tent_card: 'compact A5 landscape or folded format. Bold hero image or product shot area, minimal text, clear brand logo placement.',
-    bar_top_card: 'small format (4×6 or A6), laminated-ready. Single product or promotion focus. High visual impact at a glance.',
+    bar_top_card: 'coaster format — 4"×4" (US). Circular or square, laminated-ready. Single product or promotion focus. Bold, minimal, high visual impact.',
     shelf_talker: 'tall narrow format. Bold product name, key selling points, price point space. High contrast for shelf visibility.',
     promotional_poster: 'large format (A2 or A1 landscape/portrait). Campaign-style. Strong visual hierarchy with headline, sub-copy, and CTA space.',
   };

@@ -18,6 +18,7 @@ export interface PromptValues {
   customer: CustomerOption | null;
   image: { name: string; key?: string; src?: string } | null;
   notes: string;
+  size: string | null;
 }
 
 interface PopoverProps {
@@ -72,12 +73,16 @@ function Popover({ open, anchorRef, onClose, children, width = 280, align = 'lef
 // ── Material type picker ──────────────────────────────────────────────────────
 
 const MATERIAL_TYPES: Array<{ v: MaterialType; hint: string }> = [
-  { v: 'menu', hint: 'by-the-glass + bottle' },
-  { v: 'tent_card', hint: 'compact folded format' },
+  { v: 'menu',         hint: 'by-the-glass + bottle' },
+  { v: 'tent_card',    hint: 'compact folded format' },
   { v: 'bar_top_card', hint: 'single product focus' },
-  { v: 'shelf_talker', hint: 'tall narrow, shelf-ready' },
-  { v: 'promotional_poster', hint: 'large format campaign' },
 ];
+
+const SIZES_BY_TYPE: Partial<Record<MaterialType, string[]>> = {
+  menu:         ['4" × 6" 2-sided Menu (US)', '2 Page A5 (Europe)', '2 Page A6 (Europe)'],
+  tent_card:    ['4" × 6" Tent Card (US)', 'A5 Tent Card (Europe)'],
+  bar_top_card: ['4" × 4" Coaster (US)'],
+};
 
 function TypePicker({ value, onChange, anchorRef, open, onClose }: {
   value: MaterialType | null;
@@ -98,6 +103,34 @@ function TypePicker({ value, onChange, anchorRef, open, onClose }: {
         }}>
           <span style={{ fontSize: 14 }}>{MATERIAL_TYPE_LABELS[t.v]}</span>
           <span style={{ fontSize: 11.5, color: 'var(--ink-3)' }}>{t.hint}</span>
+        </button>
+      ))}
+    </Popover>
+  );
+}
+
+// ── Size picker ───────────────────────────────────────────────────────────────
+
+function SizePicker({ sizes, value, onChange, anchorRef, open, onClose }: {
+  sizes: string[];
+  value: string | null;
+  onChange: (v: string) => void;
+  anchorRef: React.RefObject<HTMLElement | null>;
+  open: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <Popover open={open} anchorRef={anchorRef} onClose={onClose} width={260}>
+      <div className="eyebrow" style={{ padding: '6px 8px 4px' }}>size</div>
+      {sizes.map((s) => (
+        <button key={s} onClick={() => { onChange(s); onClose(); }} style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%',
+          padding: '9px 10px', borderRadius: 'var(--r-2)',
+          background: value === s ? 'var(--paper-2)' : 'transparent',
+          border: 'none', textAlign: 'left', cursor: 'pointer', color: 'var(--ink)', fontSize: 14,
+        }}>
+          {s}
+          {value === s && <Ico.Check />}
         </button>
       ))}
     </Popover>
@@ -171,11 +204,13 @@ interface PromptSentenceProps {
 }
 
 export function PromptSentence({ values, setValues, customers, onGenerate, busy, onUploadImage }: PromptSentenceProps) {
-  const [openSlot, setOpenSlot] = useState<'type' | 'customer' | null>(null);
+  const [openSlot, setOpenSlot] = useState<'type' | 'size' | 'customer' | null>(null);
   const tRef = useRef<HTMLButtonElement>(null);
+  const sRef = useRef<HTMLButtonElement>(null);
   const cRef = useRef<HTMLButtonElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const ready = values.materialType !== null && values.customer !== null;
+  const sizesForType = values.materialType ? (SIZES_BY_TYPE[values.materialType] ?? null) : null;
+  const ready = values.materialType !== null && values.customer !== null && (!sizesForType || values.size !== null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -206,6 +241,18 @@ export function PromptSentence({ values, setValues, customers, onGenerate, busy,
         >
           {typeLabel ?? 'material type'} <Ico.Caret />
         </button>
+        {sizesForType && (
+          <>
+            <span className="static"> in </span>
+            <button
+              ref={sRef}
+              className={`slot${values.size ? ' filled' : ''}`}
+              onClick={() => setOpenSlot((s) => (s === 'size' ? null : 'size'))}
+            >
+              {values.size ?? 'select a size'} <Ico.Caret />
+            </button>
+          </>
+        )}
         <span className="static"> for </span>
         <button
           ref={cRef}
@@ -284,11 +331,24 @@ export function PromptSentence({ values, setValues, customers, onGenerate, busy,
       {/* Popovers */}
       <TypePicker
         value={values.materialType}
-        onChange={(v) => setValues((s) => ({ ...s, materialType: v }))}
+        onChange={(v) => {
+          const firstSize = SIZES_BY_TYPE[v]?.[0] ?? null;
+          setValues((s) => ({ ...s, materialType: v, size: firstSize }));
+        }}
         anchorRef={tRef}
         open={openSlot === 'type'}
         onClose={() => setOpenSlot(null)}
       />
+      {sizesForType && (
+        <SizePicker
+          sizes={sizesForType}
+          value={values.size}
+          onChange={(v) => setValues((s) => ({ ...s, size: v }))}
+          anchorRef={sRef}
+          open={openSlot === 'size'}
+          onClose={() => setOpenSlot(null)}
+        />
+      )}
       <CustomerPicker
         value={values.customer}
         onChange={(c) => setValues((s) => ({ ...s, customer: c }))}

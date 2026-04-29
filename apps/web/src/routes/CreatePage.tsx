@@ -8,6 +8,7 @@ import { streamGenerate } from '../lib/sse.js';
 import type { SSEEvent, MaterialType } from '@hyble/shared';
 import { MATERIAL_TYPE_LABELS } from '@hyble/shared';
 
+
 function toCustomerOption(row: { customer: { id: string; name: string; primary_state: string; brand_kit_id: string; created_at: string }; brand_kit: { supplier_name: string; primary_color_hex: string } }): CustomerOption {
   return {
     id: row.customer.id,
@@ -34,6 +35,7 @@ const EMPTY_VALUES: PromptValues = {
   customer: null,
   image: null,
   notes: '',
+  size: null,
 };
 
 export function CreatePage() {
@@ -161,7 +163,9 @@ export function CreatePage() {
 
   const handleInitialGenerate = useCallback(() => {
     if (!values.customer || !values.materialType) return;
-    const message = `Create a ${values.materialType} for ${values.customer.name}${values.notes ? `. Notes: ${values.notes}` : ''}`;
+    const typeLabel = MATERIAL_TYPE_LABELS[values.materialType];
+    const sizeStr = values.size ? ` (${values.size})` : '';
+    const message = `Create a ${typeLabel}${sizeStr} for ${values.customer.name}${values.notes ? `. Notes: ${values.notes}` : ''}`;
     setInitialValues({ ...values });
     setPhase('active');
     runGeneration(message);
@@ -209,6 +213,7 @@ export function CreatePage() {
         customer: customerOption,
         image: null,
         notes: '',
+        size: null,
       };
 
       setValues(resumedValues);
