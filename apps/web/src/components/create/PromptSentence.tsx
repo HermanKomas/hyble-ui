@@ -332,8 +332,9 @@ export function PromptSentence({ values, setValues, customers, onGenerate, busy,
       <TypePicker
         value={values.materialType}
         onChange={(v) => {
-          const firstSize = SIZES_BY_TYPE[v]?.[0] ?? null;
-          setValues((s) => ({ ...s, materialType: v, size: firstSize }));
+          const sizes = SIZES_BY_TYPE[v];
+          const autoSize = sizes?.length === 1 ? sizes[0] : null;
+          setValues((s) => ({ ...s, materialType: v, size: autoSize ?? null }));
         }}
         anchorRef={tRef}
         open={openSlot === 'type'}
