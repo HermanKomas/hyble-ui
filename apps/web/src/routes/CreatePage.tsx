@@ -5,6 +5,7 @@ import { ChatPanel, type ChatMessage, SSE_STEPS } from '../components/create/Cha
 import { MenuPreviewSurface } from '../components/create/MenuPreview.js';
 import { customers as customersApi, orders as ordersApi, uploadImage, type ApiOrder } from '../lib/api.js';
 import { streamGenerate } from '../lib/sse.js';
+import { useIsMobile } from '../lib/useMediaQuery.js';
 import type { SSEEvent, MaterialType } from '@hyble/shared';
 import { MATERIAL_TYPE_LABELS } from '@hyble/shared';
 
@@ -282,8 +283,7 @@ export function CreatePage() {
     runGeneration('Please regenerate with the same brief.', undefined, orderId);
   }, [values, orderId, runGeneration]);
 
-  // ── Mobile detection ──────────────────────────────────────────────────────
-  const isMobile = window.innerWidth < 768;
+  const isMobile = useIsMobile();
 
   // ── Initial state ────────────────────────────────────────────────────────
   if (phase === 'initial') {

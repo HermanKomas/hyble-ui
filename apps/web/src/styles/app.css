@@ -2,13 +2,18 @@
 
 * { box-sizing: border-box; }
 html, body, #root { margin: 0; padding: 0; height: 100%; }
+#root { min-height: 100dvh; }
 body {
   font-family: var(--font-ui);
   color: var(--ink);
   background: var(--paper);
   -webkit-font-smoothing: antialiased;
   font-feature-settings: "ss01", "cv11";
-  zoom: 1.56;
+  /* Editorial scale-up on desktop only. On mobile we render at natural size
+     so the design fits a phone viewport. */
+}
+@media (min-width: 768px) {
+  body { zoom: 1.56; }
 }
 
 .font-display { font-family: var(--font-display); letter-spacing: -0.01em; }
@@ -152,4 +157,61 @@ body {
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Mobile overrides ──────────────────────────────────────────────────────
+   The desktop zoom hack (above) doesn't apply on mobile, so the natural
+   pixel sizes here target real device CSS pixels. Tap targets follow
+   the iOS 44pt / Material 48dp guidance. */
+@media (max-width: 767px) {
+  /* Form fields must be ≥16px font to prevent iOS auto-zoom on focus.
+     !important is needed because inline styles otherwise win. */
+  input.input, .input, textarea, input[type="text"], input[type="email"], input[type="password"], input[type="search"] {
+    font-size: 16px !important;
+  }
+  /* Default button sizing on mobile is finger-sized. */
+  .btn { height: 44px; padding: 0 16px; font-size: 14.5px; }
+  .btn-sm { height: 40px; padding: 0 14px; font-size: 13.5px; }
+  .btn-lg { height: 52px; padding: 0 22px; font-size: 16px; }
+  .btn-icon { width: 44px; padding: 0; }
+  .btn-sm.btn-icon { width: 40px; }
+}
+
+/* Bottom sheet (used by chat sheet and mobile pickers). */
+.sheet-backdrop {
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(20, 15, 10, 0.32);
+  animation: fadeIn 200ms var(--ease-out) both;
+}
+.sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 61;
+  background: var(--paper); border-top: 1px solid var(--rule);
+  border-top-left-radius: 16px; border-top-right-radius: 16px;
+  box-shadow: 0 -10px 40px -8px rgba(20, 15, 10, 0.18);
+  display: flex; flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  max-height: 92dvh;
+  animation: slideUp 240ms var(--ease-spring) both;
+  touch-action: none;
+}
+.sheet-handle {
+  width: 36px; height: 4px; border-radius: 999px;
+  background: var(--rule); margin: 8px auto 4px;
+  flex-shrink: 0;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* Safe-area helpers. */
+.safe-top { padding-top: env(safe-area-inset-top, 0px); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.safe-x {
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }

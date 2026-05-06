@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/auth.js';
+import { useIsMobile } from './lib/useMediaQuery.js';
 import { Rail } from './components/shell/Rail.js';
 import { HeaderBar } from './components/shell/HeaderBar.js';
 import { AuthScreen } from './components/auth/AuthScreen.js';
@@ -18,7 +19,7 @@ function AppShell() {
   const [theme, setTheme] = useState<Theme>(() =>
     window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   );
-  const isMobile = window.innerWidth < 768;
+  const isMobile = useIsMobile();
   const activeSection = location.pathname.startsWith('/orders') ? 'orders' : 'create';
 
   useEffect(() => {
@@ -27,7 +28,7 @@ function AppShell() {
 
   if (loading) {
     return (
-      <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--paper)' }}>
+      <div style={{ height: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--paper)' }}>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '.1em', color: 'var(--ink-3)' }}>
           hyble
         </span>
@@ -47,7 +48,7 @@ function AppShell() {
   const header = HEADERS[activeSection];
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column' }}>
       {/* Mobile: compact top nav */}
       {isMobile && (
         <Rail active={activeSection} onChange={(tab) => navigate(`/${tab}`)} compact user={user} />
