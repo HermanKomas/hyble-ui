@@ -343,12 +343,26 @@ export function CreatePage() {
         />
 
         {orderHistory.length > 0 && (
-          <div style={{ maxWidth: 760, width: '100%', margin: '0 auto', padding: '0 24px 56px' }}>
-            <div style={{ borderTop: '1px solid var(--rule)', paddingTop: 32, marginBottom: 20, display: 'flex', alignItems: 'baseline', gap: 10 }}>
+          <div style={{
+            maxWidth: 760, width: '100%', margin: '0 auto',
+            padding: isMobile ? '0 16px 32px' : '0 24px 56px',
+          }}>
+            <div style={{
+              borderTop: '1px solid var(--rule)',
+              paddingTop: isMobile ? 24 : 32,
+              marginBottom: isMobile ? 14 : 20,
+              display: 'flex', alignItems: 'baseline', gap: 10,
+            }}>
               <span className="eyebrow">Recent designs</span>
               <span style={{ fontSize: 11.5, color: 'var(--ink-4)' }}>{orderHistory.length} project{orderHistory.length !== 1 ? 's' : ''}</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))', gap: 14 }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile
+                ? 'repeat(2, 1fr)'
+                : 'repeat(auto-fill, minmax(148px, 1fr))',
+              gap: isMobile ? 10 : 14,
+            }}>
               {orderHistory.map((o) => (
                 <button
                   key={o.order.id}
@@ -367,12 +381,14 @@ export function CreatePage() {
                   <button
                     onClick={(e) => handleDeleteOrder(e, o.order.id)}
                     title="Delete"
+                    aria-label="Delete project"
                     style={{
                       position: 'absolute', top: 6, right: 6, zIndex: 2,
-                      width: 20, height: 20, borderRadius: 999, padding: 0,
+                      width: isMobile ? 36 : 20, height: isMobile ? 36 : 20,
+                      borderRadius: 999, padding: 0,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       background: 'rgba(0,0,0,0.45)', border: 'none', cursor: 'pointer',
-                      color: '#fff', fontSize: 13, lineHeight: 1,
+                      color: '#fff', fontSize: isMobile ? 18 : 13, lineHeight: 1,
                     }}
                   >
                     ×
