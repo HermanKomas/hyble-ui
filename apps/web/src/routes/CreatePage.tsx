@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { PromptSentence, type PromptValues, type CustomerOption } from '../components/create/PromptSentence.js';
 import { ChatPanel, type ChatMessage, SSE_STEPS } from '../components/create/ChatPanel.js';
 import { MenuPreviewSurface } from '../components/create/MenuPreview.js';
+import { Ico } from '../components/shell/Icons.js';
 import { customers as customersApi, orders as ordersApi, uploadImage, type ApiOrder } from '../lib/api.js';
 import { streamGenerate } from '../lib/sse.js';
 import { useIsMobile } from '../lib/useMediaQuery.js';
@@ -37,6 +38,48 @@ const EMPTY_VALUES: PromptValues = {
   notes: '',
 };
 
+// Mobile peek bar — shown when chat sheet is collapsed.
+// Status line + tap-to-expand pill. No real composer here; tapping
+// expands the sheet to full and the user types in the real composer.
+function PeekChatBar({ status, generating, onExpand }: {
+  status: string | undefined;
+  generating: boolean;
+  onExpand: () => void;
+}) {
+  return (
+    <div style={{ padding: '4px 14px 12px', display: 'flex', flexDirection: 'column', gap: 8, flex: 1, minHeight: 0 }}>
+      {/* Status line */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 18 }}>
+        {generating && <Ico.Spinner s={12} />}
+        <span style={{
+          fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.35,
+          flex: 1, minWidth: 0,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {status ?? 'Tap below to refine the design.'}
+        </span>
+      </div>
+
+      {/* Tap-to-expand composer pill */}
+      <button
+        onClick={onExpand}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '12px 14px', width: '100%',
+          border: '1px solid var(--rule)', borderRadius: 'var(--r-3)',
+          background: 'var(--paper-2)', color: 'var(--ink-3)',
+          fontFamily: 'var(--font-ui)', fontSize: 14, textAlign: 'left',
+          cursor: 'pointer',
+        }}
+      >
+        <Ico.Send s={14} />
+        <span style={{ flex: 1 }}>Tweak it — change colours, swap items…</span>
+        <Ico.Chevron s={12} />
+      </button>
+    </div>
+  );
+}
+
 export function CreatePage() {
   const [phase, setPhase] = useState<'initial' | 'active'>('initial');
   const [values, setValues] = useState<PromptValues>(EMPTY_VALUES);
@@ -51,6 +94,7 @@ export function CreatePage() {
   const [orderId, setOrderId] = useState<string | undefined>(undefined);
   const [orderHistory, setOrderHistory] = useState<ApiOrder[]>([]);
   const [resuming, setResuming] = useState(false);
+  const [mobileChatExpanded, setMobileChatExpanded] = useState(false);
   const revealRef = useRef<number>(0);
   const revealAnim = useRef<ReturnType<typeof requestAnimationFrame> | null>(null);
 
@@ -362,29 +406,97 @@ export function CreatePage() {
 
   // ── Active state — split layout ───────────────────────────────────────────
   if (isMobile) {
+    const PEEK_HEIGHT = 132; // composer + handle + thin status
+    const FULL_HEIGHT = '85dvh';
+
+    const lastAssistantMsg = [...messages].reverse().find((m) => m.role === 'assistant');
+    const peekStatus = generating
+      ? (SSE_STEPS.find((s) => s.id === currentStepId)?.label ?? 'Working')
+      : lastAssistantMsg?.content;
+
     return (
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <MenuPreviewSurface
-          customer={initialValues.customer}
-          materialType={initialValues.materialType}
-          status={generating ? 'generating' : currentImageUrl ? 'done' : 'empty'}
-          reveal={reveal}
-          imageUrl={currentImageUrl}
-          hasFinal={!!currentImageUrl && !generating}
-          onRegen={handleRegen}
-          onSave={handleSave}
-          onDownload={handleDownload}
-        />
-        <div style={{ flex: 1, overflow: 'hidden', borderTop: '1px solid var(--rule)' }}>
-          <ChatPanel
-            initialValues={initialValues}
-            messages={messages}
-            generating={generating}
-            currentStepId={currentStepId}
-            currentGenerationId={currentGenerationId}
-            onSelectGeneration={handleSelectGeneration}
-            onSend={handleFollowUp}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+        {/* Canvas fills the whole area; bottom padding equals peek height so
+            the image isn't permanently hidden under the sheet. */}
+        <div style={{ position: 'absolute', inset: 0, paddingBottom: PEEK_HEIGHT, display: 'flex' }}>
+          <MenuPreviewSurface
+            customer={initialValues.customer}
+            materialType={initialValues.materialType}
+            status={generating ? 'generating' : currentImageUrl ? 'done' : 'empty'}
+            reveal={reveal}
+            imageUrl={currentImageUrl}
+            hasFinal={!!currentImageUrl && !generating}
+            onRegen={handleRegen}
+            onSave={handleSave}
+            onDownload={handleDownload}
           />
+        </div>
+
+        {/* Backdrop — only visible when chat is fully expanded */}
+        {mobileChatExpanded && (
+          <div
+            onClick={() => setMobileChatExpanded(false)}
+            style={{
+              position: 'absolute', inset: 0, zIndex: 40,
+              background: 'rgba(20, 15, 10, 0.34)',
+              animation: 'fadeIn 200ms var(--ease-out) both',
+            }}
+          />
+        )}
+
+        {/* Chat sheet — peek (composer-only) or full (history + composer) */}
+        <div
+          className="safe-bottom"
+          style={{
+            position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 50,
+            background: 'var(--paper)',
+            borderTop: '1px solid var(--rule)',
+            borderTopLeftRadius: 16, borderTopRightRadius: 16,
+            boxShadow: mobileChatExpanded
+              ? '0 -10px 40px -8px rgba(20, 15, 10, 0.22)'
+              : '0 -2px 12px -4px rgba(20, 15, 10, 0.08)',
+            display: 'flex', flexDirection: 'column',
+            height: mobileChatExpanded ? FULL_HEIGHT : PEEK_HEIGHT,
+            transition: 'height 320ms var(--ease-spring), box-shadow 200ms',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Drag handle (tap to toggle) */}
+          <button
+            onClick={() => setMobileChatExpanded((v) => !v)}
+            aria-label={mobileChatExpanded ? 'Collapse chat' : 'Expand chat'}
+            style={{
+              padding: '8px 0 4px',
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            <span
+              style={{
+                display: 'block',
+                width: 36, height: 4, borderRadius: 999,
+                background: 'var(--rule)', margin: '0 auto',
+              }}
+            />
+          </button>
+
+          {mobileChatExpanded ? (
+            <ChatPanel
+              initialValues={initialValues}
+              messages={messages}
+              generating={generating}
+              currentStepId={currentStepId}
+              currentGenerationId={currentGenerationId}
+              onSelectGeneration={handleSelectGeneration}
+              onSend={(text) => { setMobileChatExpanded(true); handleFollowUp(text); }}
+            />
+          ) : (
+            <PeekChatBar
+              status={peekStatus}
+              generating={generating}
+              onExpand={() => setMobileChatExpanded(true)}
+            />
+          )}
         </div>
       </div>
     );

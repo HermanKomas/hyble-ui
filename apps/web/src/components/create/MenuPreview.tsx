@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import type { CustomerOption } from './PromptSentence.js';
 import type { MaterialType } from '@hyble/shared';
+import { MATERIAL_TYPE_LABELS } from '@hyble/shared';
 import { Ico } from '../shell/Icons.js';
+import { useIsMobile } from '../../lib/useMediaQuery.js';
 
 interface DesignArtProps {
   customer: CustomerOption | null;
@@ -82,10 +84,105 @@ const ZOOM_MIN = 25;
 const ZOOM_MAX = 200;
 
 export function MenuPreviewSurface({ customer, materialType, status, reveal, imageUrl, hasFinal, onRegen, onSave, onDownload }: MenuPreviewSurfaceProps) {
+  const isMobile = useIsMobile();
   const [zoom, setZoom] = useState(100);
 
   const zoomIn = () => setZoom((z) => Math.min(z + ZOOM_STEP, ZOOM_MAX));
   const zoomOut = () => setZoom((z) => Math.max(z - ZOOM_STEP, ZOOM_MIN));
+
+  if (isMobile) {
+    const subtitle = [
+      customer?.name,
+      materialType ? MATERIAL_TYPE_LABELS[materialType] : null,
+    ].filter(Boolean).join(' · ');
+
+    return (
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column',
+        background: 'var(--paper-2)', minWidth: 0, position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {/* Slim context strip */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '8px 14px',
+          borderBottom: '1px solid var(--rule)',
+          background: 'var(--paper)',
+          flexShrink: 0,
+        }}>
+          <span className="eyebrow" style={{ fontSize: 9.5 }}>Design</span>
+          {subtitle && (
+            <span style={{
+              fontSize: 12.5, color: 'var(--ink-2)',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              flex: 1, minWidth: 0,
+            }}>
+              {subtitle}
+            </span>
+          )}
+        </div>
+
+        {/* Canvas */}
+        <div style={{
+          flex: 1, overflow: 'auto', padding: '14px 14px 24px',
+          display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+          touchAction: 'pinch-zoom',
+        }}>
+          {status === 'empty' ? (
+            <div style={{ alignSelf: 'center', textAlign: 'center', color: 'var(--ink-3)', maxWidth: 280, padding: '40px 12px' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, color: 'var(--ink-2)', marginBottom: 8 }}>
+                The page begins empty.
+              </div>
+              <div style={{ fontSize: 13.5, lineHeight: 1.55 }}>
+                Your design will appear here as it's generated.
+              </div>
+            </div>
+          ) : (
+            <DesignArt
+              customer={customer}
+              materialType={materialType}
+              reveal={reveal}
+              imageUrl={imageUrl}
+              zoom={100}
+            />
+          )}
+        </div>
+
+        {/* Floating actions (top-right of canvas) */}
+        {hasFinal && (
+          <div style={{
+            position: 'absolute', top: 50, right: 12, zIndex: 5,
+            display: 'flex', flexDirection: 'column', gap: 8,
+          }}>
+            <button
+              className="btn btn-icon"
+              onClick={onDownload}
+              title="Download"
+              style={{ background: 'var(--paper)', boxShadow: 'var(--shadow-2)' }}
+            >
+              <Ico.Download s={16} />
+            </button>
+            <button
+              className="btn btn-icon"
+              onClick={onRegen}
+              title="Regenerate"
+              style={{ background: 'var(--paper)', boxShadow: 'var(--shadow-2)' }}
+            >
+              <Ico.Refresh s={16} />
+            </button>
+            <button
+              className="btn btn-icon btn-accent"
+              onClick={onSave}
+              title="Save to order"
+              style={{ boxShadow: 'var(--shadow-2)' }}
+            >
+              <Ico.Save s={16} />
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--paper-2)', borderLeft: '1px solid var(--rule)', minWidth: 0 }}>

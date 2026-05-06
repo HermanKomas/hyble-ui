@@ -105,10 +105,19 @@ function ResultMessage({ msg, isCurrent, onSelect }: {
           }}
         >
           <div style={{
-            width: 44, aspectRatio: '8.5 / 11', background: '#fbf8f1',
-            borderTop: '2px solid var(--accent)',
-            borderRadius: 2, flexShrink: 0,
-          }} />
+            width: 44, aspectRatio: '8.5 / 11',
+            borderRadius: 2, flexShrink: 0, overflow: 'hidden',
+            background: msg.imageUrl ? 'var(--paper-2)' : '#fbf8f1',
+            borderTop: msg.imageUrl ? 'none' : '2px solid var(--accent)',
+          }}>
+            {msg.imageUrl && (
+              <img
+                src={msg.imageUrl}
+                alt=""
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
+            )}
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.25, flex: 1 }}>
             <span style={{ fontSize: 12.5, color: 'var(--ink)' }}>
               {msg.materialType ? MATERIAL_TYPE_LABELS[msg.materialType] : 'Design'} · v{msg.generationId.slice(-4)}

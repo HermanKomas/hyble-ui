@@ -62,6 +62,17 @@ export const Ico = {
       <path d="M11 8.5A4.5 4.5 0 0 1 5.5 3a4.5 4.5 0 1 0 5.5 5.5z"/>
     </svg>
   ),
+  SignOut: ({ s = 14 }: IconProps) => (
+    <svg width={s} height={s} viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5.5 2H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2.5"/>
+      <path d="M8 4l3 3-3 3M11 7H6"/>
+    </svg>
+  ),
+  Chevron: ({ s = 14 }: IconProps) => (
+    <svg width={s} height={s} viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m3 5 4 4 4-4"/>
+    </svg>
+  ),
   Check: ({ s = 14 }: IconProps) => (
     <svg width={s} height={s} viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <path d="m3 7 3 3 5-6"/>

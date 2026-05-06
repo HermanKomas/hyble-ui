@@ -49,9 +49,32 @@ function AppShell() {
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column' }}>
-      {/* Mobile: compact top nav */}
+      {/* Mobile: compact top nav (replaces HeaderBar on mobile) */}
       {isMobile && (
-        <Rail active={activeSection} onChange={(tab) => navigate(`/${tab}`)} compact user={user} />
+        <Rail
+          active={activeSection}
+          onChange={(tab) => navigate(`/${tab}`)}
+          compact
+          user={user}
+          rightSlot={
+            <>
+              <button
+                className="btn btn-sm btn-ghost btn-icon"
+                onClick={() => setTheme((t) => t === 'dark' ? 'light' : 'dark')}
+                title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {theme === 'dark' ? <Ico.Sun s={16} /> : <Ico.Moon s={16} />}
+              </button>
+              <button
+                className="btn btn-sm btn-ghost btn-icon"
+                onClick={logout}
+                title="Sign out"
+              >
+                <Ico.SignOut s={16} />
+              </button>
+            </>
+          }
+        />
       )}
 
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
@@ -62,28 +85,30 @@ function AppShell() {
 
         {/* Main content */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <HeaderBar
-            title={header.title}
-            subtitle={header.subtitle}
-            right={
-              <>
-                <button
-                  className="btn btn-sm btn-ghost btn-icon"
-                  onClick={() => setTheme((t) => t === 'dark' ? 'light' : 'dark')}
-                  title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                >
-                  {theme === 'dark' ? <Ico.Sun s={16} /> : <Ico.Moon s={16} />}
-                </button>
-                <button
-                  className="btn btn-sm btn-ghost"
-                  onClick={logout}
-                  style={{ fontSize: 12, color: 'var(--ink-3)' }}
-                >
-                  Sign out
-                </button>
-              </>
-            }
-          />
+          {!isMobile && (
+            <HeaderBar
+              title={header.title}
+              subtitle={header.subtitle}
+              right={
+                <>
+                  <button
+                    className="btn btn-sm btn-ghost btn-icon"
+                    onClick={() => setTheme((t) => t === 'dark' ? 'light' : 'dark')}
+                    title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                  >
+                    {theme === 'dark' ? <Ico.Sun s={16} /> : <Ico.Moon s={16} />}
+                  </button>
+                  <button
+                    className="btn btn-sm btn-ghost"
+                    onClick={logout}
+                    style={{ fontSize: 12, color: 'var(--ink-3)' }}
+                  >
+                    Sign out
+                  </button>
+                </>
+              }
+            />
+          )}
           <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
             <Routes>
               <Route path="/create/:orderId?" element={<CreatePage />} />

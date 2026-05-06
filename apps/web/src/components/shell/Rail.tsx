@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Sparkles } from 'lucide-react';
 import { Ico } from './Icons.js';
 
@@ -8,6 +9,7 @@ interface RailProps {
   onToggle?: () => void;
   compact?: boolean;
   user?: { email: string } | null;
+  rightSlot?: ReactNode;
 }
 
 const NAV_ITEMS = [
@@ -20,15 +22,40 @@ function initials(email: string): string {
   return parts.slice(0, 2).map((p) => p[0]?.toUpperCase() ?? '').join('');
 }
 
-export function Rail({ active, onChange, collapsed = false, onToggle, compact = false, user }: RailProps) {
+export function Rail({ active, onChange, collapsed = false, onToggle, compact = false, user, rightSlot }: RailProps) {
   if (compact) {
     return (
-      <nav style={{ display: 'flex', gap: 4, padding: '6px 8px', borderBottom: '1px solid var(--rule)', background: 'var(--paper)' }}>
+      <nav
+        className="safe-top safe-x"
+        style={{
+          display: 'flex', alignItems: 'center', gap: 4,
+          padding: '6px 8px',
+          borderBottom: '1px solid var(--rule)',
+          background: 'var(--paper)',
+          flexShrink: 0,
+        }}
+      >
+        <span
+          className="font-display"
+          style={{ fontSize: 18, lineHeight: 1, padding: '0 8px', color: 'var(--ink)' }}
+        >
+          hyble
+        </span>
         {NAV_ITEMS.map(({ id, label, Icon }) => (
-          <button key={id} className={`rail-item${active === id ? ' active' : ''}`} onClick={() => onChange(id)} style={{ flex: 1, justifyContent: 'center' }}>
+          <button
+            key={id}
+            className={`rail-item${active === id ? ' active' : ''}`}
+            onClick={() => onChange(id)}
+            style={{ flex: 1, justifyContent: 'center', padding: '8px 6px' }}
+          >
             <Icon /> <span>{label}</span>
           </button>
         ))}
+        {rightSlot && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {rightSlot}
+          </div>
+        )}
       </nav>
     );
   }
